@@ -495,9 +495,12 @@ async def parse_bilibili_video(url: str = Form(...), browser: Optional[str] = Fo
             "success": True,
             "video_info": video_info.to_dict()
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Falha ao analisar vídeo por link: {e}")
-        raise HTTPException(status_code=400, detail=f"Falha ao obter informações do vídeo: {str(e)}")
+        detail = getattr(e, "message", None) or str(e)
+        raise HTTPException(status_code=400, detail=detail)
 
 @app.post("/api/bilibili/download")
 async def create_bilibili_download_task(
