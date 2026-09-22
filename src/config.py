@@ -124,7 +124,7 @@ class Settings(BaseModel):
     dashscope_api_key: Optional[str] = ""
     siliconflow_api_key: Optional[str] = ""
     openrouter_api_key: Optional[str] = ""
-    api_provider: str = "dashscope"
+    api_provider: str = "openrouter"
     model_name: str = "qwen-plus"
     siliconflow_model: str = "Qwen/Qwen2.5-72B-Instruct"
     openrouter_model: str = "qwen/qwen3.8-27b:free"
@@ -192,7 +192,7 @@ class Settings(BaseModel):
 @dataclass
 class APIConfig:
     """API配置"""
-    provider: str = "dashscope"  # dashscope 或 siliconflow
+    provider: str = "openrouter"
     model_name: str = "qwen-plus"
     siliconflow_model: str = "Qwen/Qwen2.5-72B-Instruct"
     openrouter_model: str = "qwen/qwen3.8-27b:free"
