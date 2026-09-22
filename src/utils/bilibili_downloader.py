@@ -201,10 +201,6 @@ class BilibiliDownloader:
             'progress': True,
         }
         
-        if self.browser:
-            ydl_opts['cookies_from_browser'] = self.browser.lower()
-            logger.info(f'yt-dlp cookies_from_browser: {ydl_opts.get("cookies_from_browser")}')
-        
         # 添加进度钩子
         if progress_callback:
             ydl_opts['progress_hooks'] = [self._create_progress_hook(progress_callback)]
