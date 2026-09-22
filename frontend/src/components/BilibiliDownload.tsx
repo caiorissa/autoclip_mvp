@@ -74,13 +74,14 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
     }
   }, [pollingInterval])
 
-  const validateBilibiliUrl = (url: string): boolean => {
+  const validateVideoUrl = (url: string): boolean => {
     const patterns = [
-      /^https?:\/\/www\.bilibili\.com\/video\/[Bb][Vv][0-9A-Za-z]+/,
-      /^https?:\/\/bilibili\.com\/video\/[Bb][Vv][0-9A-Za-z]+/,
+      /^https?:\/\/(www\.)?bilibili\.com\/video\/[Bb][Vv][0-9A-Za-z]+/,
+      /^https?:\/\/(www\.)?bilibili\.com\/video\/av\d+/,
       /^https?:\/\/b23\.tv\/[0-9A-Za-z]+/,
-      /^https?:\/\/www\.bilibili\.com\/video\/av\d+/,
-      /^https?:\/\/bilibili\.com\/video\/av\d+/
+      /^https?:\/\/(www\.|m\.|music\.)?youtube\.com\/watch\?.*v=[0-9A-Za-z_-]{6,}/,
+      /^https?:\/\/(www\.|m\.)?youtube\.com\/(shorts|live)\/[0-9A-Za-z_-]{6,}/,
+      /^https?:\/\/youtu\.be\/[0-9A-Za-z_-]{6,}/
     ]
     return patterns.some(pattern => pattern.test(url))
   }
@@ -91,7 +92,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
       return
     }
 
-    if (!validateBilibiliUrl(url.trim())) {
+    if (!validateVideoUrl(url.trim())) {
       setError('Insira um link de vídeo válido')
       return
     }
@@ -143,11 +144,11 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
           
           // 重置状态
           resetForm()
-        } else if (task.status === 'failed') {
+        } else if ((task.status === 'failed' || task.status === 'error')) {
           clearInterval(interval)
           setPollingInterval(null)
           setDownloading(false)
-          message.error(`Falha no download: ${task.error_message || 'Erro desconhecido'}`)
+          message.error(`Falha no download: ${task.error_message || task.error || 'Erro desconhecido'}`)
         }
       } catch (error: unknown) {
         console.error('轮询任务状态失败:', error)
@@ -159,12 +160,12 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
 
   const handleDownload = async () => {
     if (!url.trim()) {
-      message.error('Insira o link do vídeo do Bilibili')
+      message.error('Insira um link do YouTube ou Bilibili')
       return
     }
 
-    if (!validateBilibiliUrl(url.trim())) {
-      message.error('Insira um link válido do Bilibili')
+    if (!validateVideoUrl(url.trim())) {
+      message.error('Insira um link válido do YouTube ou Bilibili')
       return
     }
 
@@ -237,7 +238,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
         <Space direction="vertical" style={{ width: '100%' }} size={16}>
           <div>
             <Input.TextArea
-              placeholder="Cole o link do vídeo do Bilibili. Formatos aceitos: • https://www.bilibili.com/video/BV1xx411c7mu • https://b23.tv/xxxxxxx"
+              placeholder="Cole um link do YouTube ou Bilibili. Ex.: https://youtu.be/... • https://www.youtube.com/watch?v=... • https://www.bilibili.com/video/BV..."
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value)
@@ -252,7 +253,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
               }}
               onBlur={() => {
                 // 失去焦点时自动解析
-                if (url.trim() && !videoInfo && validateBilibiliUrl(url.trim())) {
+                if (url.trim() && !videoInfo && validateVideoUrl(url.trim())) {
                   parseVideoInfo();
                 }
               }}
@@ -339,7 +340,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
                 <div>
                   <Alert
                     message="Configuração do navegador"
-                    description={`Será usado o ${defaultBrowser} para acessar sua sessão do Bilibili. Para alterar, configure o navegador padrão em Configurações.`}
+                    description={`Será usado o ${defaultBrowser} para acessar sua sessão quando necessário. Para alterar, configure o navegador padrão em Configurações.`}
                     type="info"
                     showIcon
                     icon={<InfoCircleOutlined />}
@@ -492,7 +493,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
             
             <Progress
               percent={Math.round(currentTask.progress)}
-              status={currentTask.status === 'failed' ? 'exception' : 'active'}
+              status={(currentTask.status === 'failed' || currentTask.status === 'error') ? 'exception' : 'active'}
               strokeColor={{
                 '0%': '#4facfe',
                 '100%': '#00f2fe'
@@ -503,7 +504,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
             />
           </div>
           
-          {currentTask.error_message && (
+          {(currentTask.error_message || currentTask.error) && (
             <div style={{ 
               marginTop: '16px',
               padding: '12px',
@@ -511,7 +512,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
               border: '1px solid rgba(255, 77, 79, 0.3)',
               borderRadius: '8px'
             }}>
-              <Text style={{ color: '#ff4d4f', fontSize: '14px' }}>Erro: {currentTask.error_message}</Text>
+              <Text style={{ color: '#ff4d4f', fontSize: '14px' }}>Erro: {(currentTask.error_message || currentTask.error)}</Text>
             </div>
           )}
         </Card>
