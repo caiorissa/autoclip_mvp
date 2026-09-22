@@ -390,7 +390,7 @@ const ProjectDetailPage: React.FC = () => {
                          transition: 'all 0.2s ease'
                        }}
                      >
-                       时间
+                       Tempo
                      </Radio.Button>
                      <Radio.Button 
                        value="score" 
@@ -409,7 +409,7 @@ const ProjectDetailPage: React.FC = () => {
                          transition: 'all 0.2s ease'
                        }}
                      >
-                       评分
+                       Pontuação
                      </Radio.Button>
                   </Radio.Group>
                 </div>
