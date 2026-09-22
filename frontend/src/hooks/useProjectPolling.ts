@@ -3,9 +3,9 @@ import { projectApi } from '../services/api'
 import { Project, useProjectStore } from '../store/useProjectStore'
 
 interface UseProjectPollingOptions {
-  interval?: number // 轮询间隔，默认10秒
+  interval?: number // Intervalo de polling, padrão de 10 segundos
   onProjectsUpdate?: (projects: Project[]) => void
-  enabled?: boolean // 是否启用轮询
+  enabled?: boolean // Define se o polling está ativado
 }
 
 export const useProjectPolling = ({
@@ -25,7 +25,7 @@ export const useProjectPolling = ({
     
     const poll = async () => {
       try {
-        // 如果正在拖拽，跳过这次轮询
+        // Se houver um arraste em andamento, ignora este ciclo de polling
         if (isDragging) {
           console.log('Skipping poll: dragging in progress')
           return
@@ -40,19 +40,19 @@ export const useProjectPolling = ({
         
         setLastUpdateTime(Date.now())
         
-        // 如果没有正在处理的项目，可以适当减少轮询频率
+        // Se não houver projetos em processamento, a frequência do polling pode ser reduzida
         if (!hasProcessingProjects) {
-          // 可以在这里实现动态调整轮询频率的逻辑
+          // A frequência dinâmica de polling pode ser implementada aqui
         }
       } catch (error) {
         console.error('Polling error:', error)
       }
     }
 
-    // 立即执行一次
+    // Executa imediatamente uma vez
     poll()
     
-    // 设置定时器
+    // Configura o temporizador
     intervalRef.current = setInterval(poll, interval)
   }
 
