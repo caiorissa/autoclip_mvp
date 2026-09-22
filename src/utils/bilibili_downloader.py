@@ -250,8 +250,9 @@ class BilibiliDownloader:
             raise ProcessingError(error_msg)
     
     def _download_sync(self, url: str, ydl_opts: Dict[str, Any]):
-        """Baixa vídeo e legendas via yt-dlp, com suporte a YouTube e Bilibili."""
+        """Baixa vídeo e legendas via yt-dlp, com fallback específico para YouTube."""
         browser = self.browser.lower() if self.browser else None
+        platform = self.detect_platform(url)
         safe_title = (Path(ydl_opts.get('outtmpl', '')).name.replace('%(ext)s', '').rstrip('.') or 'video')
 
         progress_callback = None
@@ -263,9 +264,10 @@ class BilibiliDownloader:
                 except Exception:
                     progress_callback = None
 
-        cmd = [
-            "yt-dlp",
+        base_cmd = [
+            sys.executable, "-m", "yt_dlp",
             "--no-playlist",
+            "--no-colors",
             "--format", "bestvideo+bestaudio/best",
             "--merge-output-format", "mp4",
             "--write-sub",
@@ -276,48 +278,92 @@ class BilibiliDownloader:
             "--output", f"{safe_title}.%(ext)s",
             "--progress"
         ]
-        if browser:
-            cmd.extend(["--cookies-from-browser", browser])
-        cmd.append(url)
 
-        logger.info("[yt-dlp] Iniciando download da plataforma: %s", self.detect_platform(url))
+        attempts = []
 
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            cwd=str(self.download_dir),
-            bufsize=1,
-            universal_newlines=True
+        if platform == "youtube":
+            # Vídeos públicos: tenta primeiro sem cookies. Isso evita o bug
+            # atual do cliente autenticado tv_downgraded do YouTube.
+            attempts.append(("sem cookies", list(base_cmd)))
+
+            if browser:
+                with_cookies = list(base_cmd)
+                with_cookies.extend([
+                    "--cookies-from-browser", browser,
+                    "--extractor-args", "youtube:player_client=default,web_embedded"
+                ])
+                attempts.append((f"com cookies de {browser}", with_cookies))
+        else:
+            cmd = list(base_cmd)
+            if browser:
+                cmd.extend(["--cookies-from-browser", browser])
+            attempts.append(("padrão", cmd))
+
+        def run_attempt(label: str, cmd: list):
+            full_cmd = cmd + [url]
+            logger.info("[yt-dlp] Tentativa %s (%s)", label, platform)
+
+            process = subprocess.Popen(
+                full_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                cwd=str(self.download_dir),
+                bufsize=1,
+                universal_newlines=True
+            )
+
+            progress_pattern = re.compile(r'\[download\]\s+(\d+\.?\d*)%')
+            output_lines = []
+
+            while True:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    line = self._clean_error_text(output.strip())
+                    output_lines.append(line)
+                    logger.info("[yt-dlp] %s", line)
+                    if progress_callback:
+                        match = progress_pattern.search(line)
+                        if match:
+                            try:
+                                progress = float(match.group(1))
+                                progress_callback(f"Baixando... {progress:.1f}%", progress)
+                            except ValueError:
+                                pass
+
+            result = process.poll()
+            return result, output_lines
+
+        last_output = []
+        last_code = 1
+
+        for label, cmd in attempts:
+            code, output_lines = run_attempt(label, cmd)
+            last_code = code
+            last_output = output_lines
+
+            if code == 0:
+                logger.info("[yt-dlp] Download concluído. Arquivos: %s", os.listdir(self.download_dir))
+                return
+
+            logger.warning("[yt-dlp] Tentativa '%s' falhou com código %s", label, code)
+
+        tail = " ".join(last_output[-8:])
+        tail = self._clean_error_text(tail)
+
+        if "The page needs to be reloaded" in tail:
+            raise ProcessingError(
+                "O YouTube recusou a extração nesta tentativa. "
+                "Atualize o yt-dlp e tente novamente. "
+                "Se o vídeo exigir login, abra o YouTube no navegador configurado, "
+                "recarregue a página do vídeo e tente novamente."
+            )
+
+        raise ProcessingError(
+            f"yt-dlp encerrou com código {last_code}. {tail or 'Nenhum detalhe adicional foi retornado.'}"
         )
-
-        progress_pattern = re.compile(r'\[download\]\s+(\d+\.?\d*)%')
-        output_lines = []
-
-        while True:
-            output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
-                break
-            if output:
-                line = output.strip()
-                output_lines.append(line)
-                logger.info("[yt-dlp] %s", line)
-                if progress_callback:
-                    match = progress_pattern.search(output)
-                    if match:
-                        try:
-                            progress = float(match.group(1))
-                            progress_callback(f"Baixando... {progress:.1f}%", progress)
-                        except ValueError:
-                            pass
-
-        result = process.poll()
-        if result != 0:
-            tail = "\n".join(output_lines[-12:])
-            raise ProcessingError(f"yt-dlp encerrou com código {result}. {tail}")
-
-        logger.info("[yt-dlp] Download concluído. Arquivos: %s", os.listdir(self.download_dir))
 
     def _create_progress_hook(self, progress_callback: Callable[[str, float], None]):
         """创建进度回调钩子"""
