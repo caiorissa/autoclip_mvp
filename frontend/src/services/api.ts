@@ -116,15 +116,29 @@ export interface BilibiliDownloadTask {
   updated_at: string
 }
 
+export interface SystemSettings {
+  dashscope_api_key: string
+  siliconflow_api_key: string
+  openrouter_api_key: string
+  api_provider: string
+  model_name: string
+  siliconflow_model: string
+  openrouter_model: string
+  chunk_size: number
+  min_score_threshold: number
+  max_clips_per_collection: number
+  default_browser?: string | null
+}
+
 // 设置相关API
 export const settingsApi = {
   // 获取系统配置
-  getSettings: (): Promise<unknown> => {
+  getSettings: (): Promise<SystemSettings> => {
     return api.get('/settings')
   },
 
   // 更新系统配置
-  updateSettings: (settings: unknown): Promise<unknown> => {
+  updateSettings: (settings: SystemSettings): Promise<unknown> => {
     return api.post('/settings', settings)
   },
 
