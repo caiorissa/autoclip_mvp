@@ -198,7 +198,7 @@ const HomePage: React.FC = () => {
                       try {
                         await handleStartProcessing(projectId)
                       } catch (error) {
-                        // 如果Falha ao iniciar o processamento，至少确保项目列表是最新的
+                        // Se o processamento não iniciar, ao menos mantém a lista de projetos atualizada
                         console.error('Failed to start processing after download:', error)
                         loadProjects()
                       }
@@ -215,7 +215,7 @@ const HomePage: React.FC = () => {
                       try {
                         await handleStartProcessing(projectId)
                       } catch (error) {
-                        // 如果Falha ao iniciar o processamento，至少确保项目列表是最新的
+                        // Se o processamento não iniciar, ao menos mantém a lista de projetos atualizada
                         console.error('Failed to start processing after upload:', error)
                         loadProjects()
                       }
