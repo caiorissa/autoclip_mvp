@@ -109,24 +109,34 @@ class BilibiliDownloader:
             'noplaylist': True,
         }
 
-        attempts = [base_opts]
+        attempts = []
 
-        # No YouTube, cookies de navegador podem acionar um cliente problemático.
-        # Primeiro tenta como visitante; usa cookies apenas como fallback.
-        if self.browser:
-            browser = self.browser.lower()
-            cookie_opts = dict(base_opts)
-            cookie_opts['cookiesfrombrowser'] = (browser,)
-            if platform == 'youtube':
-                cookie_opts['extractor_args'] = {
-                    'youtube': {
-                        'player_client': ['default', 'web_embedded']
-                    }
+        if platform == 'youtube':
+            # Workaround atual do yt-dlp para falhas do cliente padrão do YouTube.
+            public_opts = dict(base_opts)
+            public_opts['extractor_args'] = {
+                'youtube': {
+                    'player_client': ['default', 'web_embedded']
                 }
-            attempts.append(cookie_opts)
+            }
+            attempts.append(('público', public_opts))
 
-        last_error = None
-        for index, opts in enumerate(attempts):
+            if self.browser:
+                browser = self.browser.lower()
+                cookie_opts = dict(public_opts)
+                cookie_opts['cookiesfrombrowser'] = (browser,)
+                attempts.append((f'cookies de {browser}', cookie_opts))
+        else:
+            attempts.append(('padrão', dict(base_opts)))
+            if self.browser:
+                browser = self.browser.lower()
+                cookie_opts = dict(base_opts)
+                cookie_opts['cookiesfrombrowser'] = (browser,)
+                attempts.append((f'cookies de {browser}', cookie_opts))
+
+        errors = []
+
+        for label, opts in attempts:
             try:
                 loop = asyncio.get_event_loop()
                 info_dict = await loop.run_in_executor(
@@ -137,16 +147,31 @@ class BilibiliDownloader:
                 )
                 return BilibiliVideoInfo(info_dict)
             except Exception as exc:
-                last_error = exc
-                logger.warning(
-                    "Falha ao obter metadados (%s/%s): %s",
-                    index + 1,
-                    len(attempts),
-                    self._clean_error_text(str(exc))
+                clean = self._clean_error_text(str(exc))
+                errors.append((label, clean))
+                logger.warning("Falha ao obter metadados (%s): %s", label, clean)
+
+        if platform == 'youtube':
+            combined = " | ".join(f"{label}: {msg}" for label, msg in errors)
+
+            if "The page needs to be reloaded" in combined:
+                raise ProcessingError(
+                    "O YouTube recusou a extração dos dados do vídeo. "
+                    "Isso é um problema conhecido do yt-dlp/YouTube. "
+                    "Atualize o yt-dlp e tente novamente. "
+                    "Se o vídeo for público, deixe o navegador desativado nas configurações; "
+                    "se exigir login, mantenha o YouTube aberto e autenticado no navegador selecionado."
                 )
 
-        clean_error = self._clean_error_text(str(last_error)) if last_error else "erro desconhecido"
-        raise ProcessingError(f"Falha ao obter informações do vídeo: {clean_error}")
+            if errors:
+                raise ProcessingError(
+                    f"Não foi possível obter os dados do vídeo do YouTube: {errors[0][1]}"
+                )
+
+        if errors:
+            raise ProcessingError(f"Falha ao obter informações do vídeo: {errors[0][1]}")
+
+        raise ProcessingError("Falha ao obter informações do vídeo por um motivo desconhecido.")
 
     @staticmethod
     def _clean_error_text(text: str) -> str:
