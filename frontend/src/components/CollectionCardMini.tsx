@@ -38,7 +38,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
     return `${mins}:${String(secs).padStart(2, '0')}`
   }
 
-  // 移除评分计算
+  // Remover评分计算
 
   return (
 
@@ -112,7 +112,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
                   : '0 2px 4px rgba(114, 46, 209, 0.2)'
               }}
             >
-              {collection.collection_type === 'manual' ? '手动创建' : 'AI推荐'}
+              {collection.collection_type === 'manual' ? 'Criada manualmente' : 'Recomendada pela IA'}
             </span>
           </div>
           
@@ -151,7 +151,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
                 background: '#1890ff'
               }} />
               <Text style={{ fontSize: '11px', color: '#8c8c8c' }}>
-                {collectionClips.length}个片段
+                {collectionClips.length} clipes
               </Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -168,14 +168,14 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
           </div>
           {onDelete && isHovered && (
             <Popconfirm
-              title="确认删除"
-              description="确定要删除这个合集吗？此操作不可撤销。"
+              title="Confirmar exclusão"
+              description="Tem certeza de que deseja excluir esta coleção? Esta ação não pode ser desfeita."
               onConfirm={(e) => {
                 e?.stopPropagation()
                 onDelete(collection.id)
               }}
               okText="确认"
-              cancelText="取消"
+              cancelText="Cancelar"
               okType="danger"
             >
               <Button
@@ -190,7 +190,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
                   height: 'auto'
                 }}
               >
-                删除
+                Excluir
               </Button>
             </Popconfirm>
           )}
