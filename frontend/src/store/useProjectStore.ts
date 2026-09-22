@@ -402,7 +402,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     // Aplica a atualização imediatamente
     updateState(updatedClipIds)
     
-    // Chama a API do backend保存更新
+    // Chama a API do backend para salvar a atualização
     try {
       console.log('Adding clips to collection:', { projectId, collectionId, clipIds, updatedClipIds })
       await projectApi.updateCollection(projectId, collectionId, { clip_ids: updatedClipIds })
