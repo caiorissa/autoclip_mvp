@@ -510,7 +510,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
         </div>
       </div>
       
-      {/* Adicionar clipe模态框 */}
+      {/* Modal para adicionar clipe */}
       <AddClipToCollectionModal
         visible={showAddClipModal}
         clips={clips}
