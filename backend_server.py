@@ -91,9 +91,11 @@ class CollectionUpdate(BaseModel):
 class ApiSettings(BaseModel):
     dashscope_api_key: str = ""
     siliconflow_api_key: str = ""
+    openrouter_api_key: str = ""
     api_provider: str = "dashscope"
     model_name: str = "qwen-plus"
     siliconflow_model: str = "Qwen/Qwen2.5-72B-Instruct"
+    openrouter_model: str = "qwen/qwen3.8-27b:free"
     chunk_size: int = 5000
     min_score_threshold: float = 0.7
     max_clips_per_collection: int = 5
@@ -1707,6 +1709,11 @@ async def get_settings():
             settings = {
                 "dashscope_api_key": DASHSCOPE_API_KEY or "",
                 "model_name": "qwen-plus",
+                "siliconflow_api_key": "",
+                "siliconflow_model": "Qwen/Qwen2.5-72B-Instruct",
+                "openrouter_api_key": "",
+                "openrouter_model": "qwen/qwen3.8-27b:free",
+                "api_provider": "openrouter",
                 "chunk_size": 5000,
                 "min_score_threshold": 0.7,
                 "max_clips_per_collection": 5,
@@ -1730,8 +1737,10 @@ async def update_settings(settings: ApiSettings):
         # 更新环境变量
         os.environ["DASHSCOPE_API_KEY"] = settings.dashscope_api_key
         os.environ["SILICONFLOW_API_KEY"] = settings.siliconflow_api_key
+        os.environ["OPENROUTER_API_KEY"] = settings.openrouter_api_key
         os.environ["API_PROVIDER"] = settings.api_provider
         os.environ["SILICONFLOW_MODEL"] = settings.siliconflow_model
+        os.environ["OPENROUTER_MODEL"] = settings.openrouter_model
         
         return {"message": "配置更新成功"}
     except Exception as e:
@@ -1844,17 +1853,23 @@ if __name__ == "__main__":
                     logger.info("已从配置文件加载 DASHSCOPE_API_KEY")
                 if settings.get("siliconflow_api_key"):
                     os.environ["SILICONFLOW_API_KEY"] = settings["siliconflow_api_key"]
-                    logger.info("已从配置文件加载 SILICONFLOW_API_KEY")
+                    logger.info("Carregada SILICONFLOW_API_KEY do arquivo de configuração")
+                if settings.get("openrouter_api_key"):
+                    os.environ["OPENROUTER_API_KEY"] = settings["openrouter_api_key"]
+                    logger.info("Carregada OPENROUTER_API_KEY do arquivo de configuração")
                 if settings.get("api_provider"):
                     os.environ["API_PROVIDER"] = settings["api_provider"]
                     logger.info(f"已从配置文件加载 API_PROVIDER: {settings['api_provider']}")
                 if settings.get("siliconflow_model"):
                     os.environ["SILICONFLOW_MODEL"] = settings["siliconflow_model"]
-                    logger.info(f"已从配置文件加载 SILICONFLOW_MODEL: {settings['siliconflow_model']}")
+                    logger.info(f"Carregado SILICONFLOW_MODEL: {settings['siliconflow_model']}")
+                if settings.get("openrouter_model"):
+                    os.environ["OPENROUTER_MODEL"] = settings["openrouter_model"]
+                    logger.info(f"Carregado OPENROUTER_MODEL: {settings['openrouter_model']}")
                 
                 # 检查是否有有效的API密钥
-                if not settings.get("dashscope_api_key") and not settings.get("siliconflow_api_key"):
-                    logger.warning("配置文件中未找到有效的API密钥")
+                if not settings.get("dashscope_api_key") and not settings.get("siliconflow_api_key") and not settings.get("openrouter_api_key"):
+                    logger.warning("Nenhuma chave de API válida encontrada na configuração")
         else:
             logger.warning("配置文件不存在，请在前端设置 API 密钥")
     except Exception as e:
