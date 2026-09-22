@@ -25,20 +25,22 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class BilibiliVideoInfo:
-    """B站视频信息类"""
+    """Informações normalizadas de um vídeo do YouTube ou Bilibili."""
     def __init__(self, info_dict: Dict[str, Any]):
         self.bvid = info_dict.get('id', '')
-        self.title = info_dict.get('title', 'unknown_video')
-        self.duration = info_dict.get('duration', 0)
-        self.uploader = info_dict.get('uploader', 'unknown')
-        self.description = info_dict.get('description', '')
-        self.thumbnail_url = info_dict.get('thumbnail', '')
-        self.view_count = info_dict.get('view_count', 0)
-        self.upload_date = info_dict.get('upload_date', '')
-        self.webpage_url = info_dict.get('webpage_url', '')
+        self.title = info_dict.get('title', 'video_sem_titulo')
+        self.duration = info_dict.get('duration', 0) or 0
+        self.uploader = info_dict.get('uploader') or info_dict.get('channel') or 'Desconhecido'
+        self.description = info_dict.get('description', '') or ''
+        self.thumbnail_url = info_dict.get('thumbnail', '') or ''
+        self.view_count = info_dict.get('view_count', 0) or 0
+        self.upload_date = info_dict.get('upload_date', '') or ''
+        self.webpage_url = info_dict.get('webpage_url', '') or ''
+        extractor = str(info_dict.get('extractor_key') or info_dict.get('extractor') or '').lower()
+        self.platform = 'youtube' if 'youtube' in extractor else 'bilibili' if 'bilibili' in extractor else extractor
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典格式"""
+        """Converte as informações para o formato usado pela API."""
         return {
             'bvid': self.bvid,
             'title': self.title,
@@ -48,7 +50,8 @@ class BilibiliVideoInfo:
             'thumbnail_url': self.thumbnail_url,
             'view_count': self.view_count,
             'upload_date': self.upload_date,
-            'webpage_url': self.webpage_url
+            'webpage_url': self.webpage_url,
+            'platform': self.platform
         }
 
 class BilibiliDownloader:
@@ -66,26 +69,33 @@ class BilibiliDownloader:
         self.browser = browser
         self.download_dir.mkdir(parents=True, exist_ok=True)
         
-    def validate_bilibili_url(self, url: str) -> bool:
-        """
-        验证B站视频链接格式
-        
-        Args:
-            url: 视频链接
-            
-        Returns:
-            是否为有效的B站链接
-        """
-        bilibili_patterns = [
-            r'https?://www\.bilibili\.com/video/[Bb][Vv][0-9A-Za-z]+',
-            r'https?://bilibili\.com/video/[Bb][Vv][0-9A-Za-z]+',
+    def validate_video_url(self, url: str) -> bool:
+        """Valida links de vídeo do YouTube e Bilibili."""
+        if not url or not isinstance(url, str):
+            return False
+
+        supported_patterns = [
+            r'https?://(www\.)?bilibili\.com/video/[Bb][Vv][0-9A-Za-z]+',
+            r'https?://(www\.)?bilibili\.com/video/av\d+',
             r'https?://b23\.tv/[0-9A-Za-z]+',
-            r'https?://www\.bilibili\.com/video/av\d+',
-            r'https?://bilibili\.com/video/av\d+'
+            r'https?://(www\.|m\.|music\.)?youtube\.com/watch\?.*v=[0-9A-Za-z_-]{6,}',
+            r'https?://(www\.|m\.)?youtube\.com/(shorts|live)/[0-9A-Za-z_-]{6,}',
+            r'https?://youtu\.be/[0-9A-Za-z_-]{6,}'
         ]
-        
-        return any(re.match(pattern, url) for pattern in bilibili_patterns)
-    
+        return any(re.match(pattern, url.strip(), re.IGNORECASE) for pattern in supported_patterns)
+
+    def validate_bilibili_url(self, url: str) -> bool:
+        """Alias legado para compatibilidade."""
+        return self.validate_video_url(url)
+
+    def detect_platform(self, url: str) -> str:
+        normalized = (url or '').lower()
+        if 'youtu.be' in normalized or 'youtube.com' in normalized:
+            return 'youtube'
+        if 'bilibili.com' in normalized or 'b23.tv' in normalized:
+            return 'bilibili'
+        return 'unknown'
+
     async def get_video_info(self, url: str) -> BilibiliVideoInfo:
         """
         获取视频信息（不下载）
@@ -96,8 +106,8 @@ class BilibiliDownloader:
         Returns:
             视频信息对象
         """
-        if not self.validate_bilibili_url(url):
-            raise ValidationError(f"无效的B站视频链接: {url}")
+        if not self.validate_video_url(url):
+            raise ValidationError(f"Link de vídeo não suportado: {url}")
         
         ydl_opts = {
             'quiet': True,
@@ -140,8 +150,8 @@ class BilibiliDownloader:
         Returns:
             包含video_path和subtitle_path的字典
         """
-        if not self.validate_bilibili_url(url):
-            raise ValidationError(f"无效的B站视频链接: {url}")
+        if not self.validate_video_url(url):
+            raise ValidationError(f"Link de vídeo não suportado: {url}")
         
         # 获取视频信息
         video_info = await self.get_video_info(url)
