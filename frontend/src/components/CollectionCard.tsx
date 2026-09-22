@@ -56,10 +56,10 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
     onReorderClips(collection.id, newClipIds)
   }
 
-  // 按照collection.clip_ids的顺序排列clips
+  // Ordena os clipes conforme collection.clip_ids
   const collectionClips = collection.clip_ids.map(clipId => clips.find(clip => clip.id === clipId)).filter(Boolean) as Clip[]
   const totalDuration = collectionClips.reduce((total, clip) => {
-    // 简单计算总时长
+    // Calcula a duração total de forma simples
     const start = clip.start_time.split(':')
     const end = clip.end_time.split(':')
     const startSeconds = parseInt(start[0]) * 3600 + parseInt(start[1]) * 60 + parseFloat(start[2].replace(',', '.'))
@@ -80,7 +80,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
   return (
     <>
       <div style={{ position: 'relative', width: '100%' }}>
-        {/* 删除按钮 - 只在hover时显示 */}
+        {/* Botão de excluir — exibido somente ao passar o mouse */}
         {onDelete && isHovered && (
           <div style={{
             position: 'absolute',
@@ -147,7 +147,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                   fontSize: '12px'
                 }}
               >
-                {collectionClips.length} 个Clipes
+                {collectionClips.length} clipes
               </div>
               <div 
                 style={{
@@ -161,7 +161,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                 }}
               >
                 <Text style={{ color: 'white', fontSize: '12px' }}>
-                  总Duração: {formatDuration(totalDuration)}
+                  Duração total: {formatDuration(totalDuration)}
                 </Text>
                 <div 
                   style={{
@@ -173,7 +173,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                     fontWeight: 'bold'
                   }}
                 >
-                  {(averageScore * 100).toFixed(0)}分
+                  {(averageScore * 100).toFixed(0)} pontos
                 </div>
               </div>
             </div>
@@ -295,7 +295,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                   Clipes incluídos: {collectionClips.slice(0, 2).map((clip, idx) => (
                     <span key={clip.id || idx}>{clip.title || clip.outline}</span>
                   )).reduce((prev, curr) => [prev, '、', curr], [] as React.ReactNode[])}
-                  {collectionClips.length > 2 && `等${collectionClips.length}个`}
+                  {collectionClips.length > 2 && `+ ${collectionClips.length - 2} clipes`}
                 </Text>
               </div>
             </Space>
@@ -304,7 +304,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
         </Card>
       </div>
 
-      {/* Lista de clipes模态框 */}
+      {/* Modal da lista de clipes */}
       <Modal
         title={`${collection.collection_title} - Lista de clipes`}
         open={showClipList}
@@ -375,7 +375,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                                     <Text ellipsis style={{ flex: 1 }}>
                                       {clip.title || clip.outline}
                                     </Text>
-                                    <Tag color="blue">{(clip.final_score * 100).toFixed(0)}分</Tag>
+                                    <Tag color="blue">{(clip.final_score * 100).toFixed(0)} pontos</Tag>
                                   </div>
                                 }
                                 description={
