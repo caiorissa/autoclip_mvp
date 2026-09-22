@@ -463,7 +463,7 @@ const ProjectDetailPage: React.FC = () => {
               }}>
                 <Empty 
                   description={
-                    <Text style={{ color: '#888', fontSize: '14px' }}>暂无Clipes de vídeo</Text>
+                    <Text style={{ color: '#888', fontSize: '14px' }}>Nenhum clipe de vídeo disponível</Text>
                   }
                   image={<PlayCircleOutlined style={{ fontSize: '48px', color: '#555' }} />}
                 />
@@ -479,14 +479,14 @@ const ProjectDetailPage: React.FC = () => {
               <div>
                 <Text>O projeto ainda não terminou o processamento</Text>
                 <br />
-                <Text type="secondary">处理完成后可查看Clipes de vídeo和AI合集</Text>
+                <Text type="secondary">Após concluir o processamento, você poderá ver os clipes de vídeo e as coleções da IA</Text>
               </div>
             }
           />
         </Card>
       )}
 
-      {/* Criar coleção模态框 */}
+      {/* Modal para criar coleção */}
       <CreateCollectionModal
         visible={showCreateCollection}
         clips={currentProject.clips || []}
