@@ -33,5 +33,5 @@ export default defineConfig({
       }
     }
   },
-  base: '/'  // 确保资源路径正确
+  base: '/'  // Garante que o caminho dos recursos esteja correto
 })
