@@ -306,7 +306,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                     icon={<DeleteOutlined />}
                     style={{ color: 'white' }}
                   >
-                    删除
+                    Excluir
                   </Button>
                 </Popconfirm>
               )}
