@@ -41,7 +41,7 @@ const SettingsPage: React.FC = () => {
     detectAvailableBrowsers()
   }, [])
 
-  // 检测可用浏览器
+  // Detecta navegadores disponíveis
   const detectAvailableBrowsers = async () => {
     setDetectingBrowsers(true)
     try {
@@ -51,7 +51,7 @@ const SettingsPage: React.FC = () => {
         const browsers: BrowserInfo[] = data.browsers
         setAvailableBrowsers(browsers)
         
-        // 自动选择第一个可用的浏览器，优先选择Chrome
+        // Seleciona automaticamente o primeiro navegador disponível, priorizando o Chrome
         const chromeBrowser = browsers.find(b => b.value === 'chrome' && b.available)
         const firstAvailable = chromeBrowser || browsers.find(b => b.available)
         if (firstAvailable) {
@@ -59,7 +59,7 @@ const SettingsPage: React.FC = () => {
           setSelectedBrowser(firstAvailable.value)
         }
       } else {
-        // 如果API调用失败，使用默认配置
+        // Se a API falhar, usa a configuração padrão
         const browsers: BrowserInfo[] = [
           { name: 'Chrome', value: 'chrome', available: true, priority: 1 },
           { name: 'Edge', value: 'edge', available: true, priority: 2 },
@@ -71,8 +71,8 @@ const SettingsPage: React.FC = () => {
         setSelectedBrowser('chrome')
       }
     } catch (error) {
-      console.error('检测浏览器失败:', error)
-      // 使用默认配置
+      console.error('Falha ao detectar navegadores:', error)
+      // Usa a configuração padrão
       const browsers: BrowserInfo[] = [
         { name: 'Chrome', value: 'chrome', available: true, priority: 1 },
         { name: 'Edge', value: 'edge', available: true, priority: 2 },
@@ -94,7 +94,7 @@ const SettingsPage: React.FC = () => {
       if (data.default_browser) setSelectedBrowser(data.default_browser)
       if (data.api_provider) setSelectedProvider(data.api_provider)
     } catch (error) {
-      message.error('加载配置失败')
+      message.error('Falha ao carregar as configurações')
       console.error('Load settings error:', error)
     }
   }
@@ -103,9 +103,9 @@ const SettingsPage: React.FC = () => {
     setLoading(true)
     try {
       await settingsApi.updateSettings(values)
-      message.success('配置保存成功')
+      message.success('Configurações salvas com sucesso')
     } catch (error) {
-      message.error('保存配置失败')
+      message.error('Falha ao salvar as configurações')
       console.error('Save settings error:', error)
     } finally {
       setLoading(false)
@@ -160,13 +160,13 @@ const SettingsPage: React.FC = () => {
     <Content className="settings-page">
       <div className="settings-container">
         <Title level={2} className="settings-title">
-          <SettingOutlined /> 系统配置
+          <SettingOutlined /> Configurações do sistema
         </Title>
         
-        <Card title="API 配置" className="settings-card">
+        <Card title="Configuração da API" className="settings-card">
           <Alert
-            message="配置说明"
-            description="请选择API提供商并配置相应的API密钥以启用AI自动切片功能。"
+            message="Como configurar"
+            description="Escolha um provedor de API e informe a chave correspondente para ativar o clipping automático com IA."
             type="info"
             showIcon
             className="settings-alert"
@@ -187,15 +187,15 @@ const SettingsPage: React.FC = () => {
               max_clips_per_collection: 5
             }}
           >
-            {/* API提供商选择 */}
+            {/* Seleção do provedor de API */}
             <Form.Item
-              label="API提供商"
+              label="Provedor de API"
               name="api_provider"
               className="form-item"
-              rules={[{ required: true, message: '请选择API提供商' }]}
+              rules={[{ required: true, message: '请选择Provedor de API' }]}
             >
               <Select 
-                placeholder="请选择API提供商" 
+                placeholder="请选择Provedor de API" 
                 className="settings-input"
                 onChange={handleProviderChange}
                 value={selectedProvider}
@@ -206,7 +206,7 @@ const SettingsPage: React.FC = () => {
               </Select>
             </Form.Item>
 
-            {/* 通义千问配置 */}
+            {/* Configuração do DashScope */}
             {selectedProvider === 'dashscope' && (
               <>
                 <Form.Item
@@ -214,24 +214,24 @@ const SettingsPage: React.FC = () => {
                   name="dashscope_api_key"
                   className="form-item"
                   rules={[
-                    { required: true, message: '请输入API密钥' },
-                    { min: 10, message: 'API密钥长度不能少于10位' }
+                    { required: true, message: 'Digite a chave da API' },
+                    { min: 10, message: 'A chave da API deve ter pelo menos 10 caracteres' }
                   ]}
                 >
                   <Input.Password
-                    placeholder="请输入通义千问API密钥"
+                    placeholder="Digite a chave da API do DashScope"
                     prefix={<KeyOutlined />}
                     className="settings-input"
                   />
                 </Form.Item>
 
                 <Form.Item
-                  label="通义千问模型"
+                  label="Modelo DashScope"
                   name="model_name"
                   className="form-item"
-                  rules={[{ required: true, message: '请选择模型' }]}
+                  rules={[{ required: true, message: 'Selecione um modelo' }]}
                 >
-                  <Select placeholder="请选择模型" className="settings-input">
+                  <Select placeholder="Selecione um modelo" className="settings-input">
                     <Select.Option value="qwen-plus">Qwen Plus</Select.Option>
                     <Select.Option value="qwen-turbo">Qwen Turbo</Select.Option>
                     <Select.Option value="qwen-max">Qwen Max</Select.Option>
@@ -240,7 +240,7 @@ const SettingsPage: React.FC = () => {
               </>
             )}
 
-            {/* 硅基流动配置 */}
+            {/* Configuração do SiliconFlow */}
             {selectedProvider === 'siliconflow' && (
               <>
                 <Form.Item
@@ -248,24 +248,24 @@ const SettingsPage: React.FC = () => {
                   name="siliconflow_api_key"
                   className="form-item"
                   rules={[
-                    { required: true, message: '请输入API密钥' },
-                    { min: 10, message: 'API密钥长度不能少于10位' }
+                    { required: true, message: 'Digite a chave da API' },
+                    { min: 10, message: 'A chave da API deve ter pelo menos 10 caracteres' }
                   ]}
                 >
                   <Input.Password
-                    placeholder="请输入硅基流动API密钥"
+                    placeholder="Digite a chave da API do SiliconFlow"
                     prefix={<KeyOutlined />}
                     className="settings-input"
                   />
                 </Form.Item>
 
                 <Form.Item
-                  label="硅基流动模型"
+                  label="Modelo SiliconFlow"
                   name="siliconflow_model"
                   className="form-item"
-                  rules={[{ required: true, message: '请选择模型' }]}
+                  rules={[{ required: true, message: 'Selecione um modelo' }]}
                 >
-                  <Select placeholder="请选择模型" className="settings-input">
+                  <Select placeholder="Selecione um modelo" className="settings-input">
                     <Select.Option value="Qwen/Qwen2.5-72B-Instruct">Qwen2.5-72B-Instruct</Select.Option>
                     <Select.Option value="Qwen/Qwen3-8B">Qwen3-8B</Select.Option>
                     <Select.Option value="Pro/deepseek-ai/DeepSeek-R1">DeepSeek-R1</Select.Option>
@@ -321,7 +321,7 @@ const SettingsPage: React.FC = () => {
               </>
             )}
 
-            {/* 操作按钮 */}
+            {/* Botões de ação */}
             <Form.Item>
               <Space>
                 <Button 
@@ -330,44 +330,44 @@ const SettingsPage: React.FC = () => {
                   htmlType="submit" 
                   loading={loading}
                 >
-                  保存配置
+                  Salvar configuração
                 </Button>
                 <Button 
                   type="default" 
                   onClick={handleTestApi}
                   loading={loading}
                 >
-                  测试API连接
+                  Testar conexão da API
                 </Button>
               </Space>
             </Form.Item>
 
             <Divider className="settings-divider" />
 
-            <Title level={4} className="section-title">处理参数配置</Title>
+            <Title level={4} className="section-title">Parâmetros de processamento</Title>
             
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label="文本分块大小"
+                  label="Tamanho dos blocos de texto"
                   name="chunk_size"
                   className="form-item"
-                  rules={[{ required: true, message: '请输入分块大小' }]}
+                  rules={[{ required: true, message: 'Digite o tamanho dos blocos' }]}
                 >
                   <Input 
                     type="number" 
                     placeholder="5000" 
-                    addonAfter="字符" 
+                    addonAfter="caracteres" 
                     className="settings-input"
                   />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label="最低评分阈值"
+                  label="Pontuação mínima"
                   name="min_score_threshold"
                   className="form-item"
-                  rules={[{ required: true, message: '请输入评分阈值' }]}
+                  rules={[{ required: true, message: 'Digite a pontuação mínima' }]}
                 >
                   <Input 
                     type="number" 
@@ -384,15 +384,15 @@ const SettingsPage: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label="每个合集最大切片数"
+                  label="Máximo de clipes por coleção"
                   name="max_clips_per_collection"
                   className="form-item"
-                  rules={[{ required: true, message: '请输入最大切片数' }]}
+                  rules={[{ required: true, message: 'Digite o número máximo de clipes' }]}
                 >
                   <Input 
                     type="number" 
                     placeholder="5" 
-                    addonAfter="个" 
+                    addonAfter="clipes" 
                     className="settings-input"
                   />
                 </Form.Item>
@@ -401,11 +401,11 @@ const SettingsPage: React.FC = () => {
 
             <Divider className="settings-divider" />
 
-            <Title level={4} className="section-title">浏览器配置</Title>
+            <Title level={4} className="section-title">Configuração do navegador</Title>
             
             <Alert
-              message="B站链接导入设置"
-              description="配置默认浏览器用于获取B站登录状态，下载AI字幕。如不配置将只能下载公开字幕。"
+              message="Importação por link"
+              description="Configure o navegador padrão para reutilizar sua sessão quando necessário e acessar legendas. Sem isso, somente conteúdo público poderá ser obtido."
               type="info"
               showIcon
               style={{
@@ -429,7 +429,7 @@ const SettingsPage: React.FC = () => {
               }}>
                 <Spin size="small" />
                 <Text style={{ color: '#4facfe', fontSize: '14px' }}>
-                  正在检测可用浏览器...
+                  正在Detecta navegadores disponíveis...
                 </Text>
               </div>
             ) : (
@@ -483,7 +483,7 @@ const SettingsPage: React.FC = () => {
                       }}
                     >
                       {browser.name}
-                      {!browser.available && <span style={{ fontSize: '10px', opacity: 0.6 }}> (未安装)</span>}
+                      {!browser.available && <span style={{ fontSize: '10px', opacity: 0.6 }}> (não instalado)</span>}
                     </div>
                   )
                 })}
@@ -499,21 +499,21 @@ const SettingsPage: React.FC = () => {
                 size="large"
                 className="save-button"
                 onClick={() => {
-                  // 保存时同步selectedBrowser和form
+                  // Sincroniza selectedBrowser com o formulário ao salvar
                   form.setFieldValue('default_browser', selectedBrowser)
                 }}
               >
-                保存配置
+                Salvar configuração
               </Button>
             </Form.Item>
           </Form>
         </Card>
 
-        <Card title="使用说明" className="settings-card">
+        <Card title="Como usar" className="settings-card">
           <Space direction="vertical" size="large" className="instructions-space">
             <div className="instruction-item">
               <Title level={5} className="instruction-title">
-                <InfoCircleOutlined /> 1. 获取API密钥
+                <InfoCircleOutlined /> 1. Obter uma chave de API
               </Title>
               <Paragraph className="instruction-text">
                 <strong>OpenRouter:</strong> crie uma chave em <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">OpenRouter → Keys</a> e cole no campo acima.<br />
@@ -524,12 +524,12 @@ const SettingsPage: React.FC = () => {
             
             <div className="instruction-item">
               <Title level={5} className="instruction-title">
-                <InfoCircleOutlined /> 2. 配置参数说明
+                <InfoCircleOutlined /> 2. Entender os parâmetros
               </Title>
               <Paragraph className="instruction-text">
-                • <Text strong>文本分块大小</Text>：影响处理速度和精度，建议5000字符<br />
-                • <Text strong>评分阈值</Text>：只有高于此分数的片段才会被保留<br />
-                • <Text strong>合集切片数</Text>：控制每个主题合集包含的片段数量
+                • <Text strong>Tamanho dos blocos de texto</Text>：影响处理速度和精度，建议5000caracteres<br />
+                • <Text strong>Pontuação mínima</Text>: somente clipes acima desse valor serão mantidos<br />
+                • <Text strong>Clipes por coleção</Text>: controla quantos clipes cada coleção temática pode conter
               </Paragraph>
             </div>
             
