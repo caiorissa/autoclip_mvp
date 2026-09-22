@@ -74,16 +74,36 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
     }
   }, [pollingInterval])
 
-  const validateVideoUrl = (url: string): boolean => {
-    const patterns = [
-      /^https?:\/\/(www\.)?bilibili\.com\/video\/[Bb][Vv][0-9A-Za-z]+/,
-      /^https?:\/\/(www\.)?bilibili\.com\/video\/av\d+/,
-      /^https?:\/\/b23\.tv\/[0-9A-Za-z]+/,
-      /^https?:\/\/(www\.|m\.|music\.)?youtube\.com\/watch\?.*v=[0-9A-Za-z_-]{6,}/,
-      /^https?:\/\/(www\.|m\.)?youtube\.com\/(shorts|live)\/[0-9A-Za-z_-]{6,}/,
-      /^https?:\/\/youtu\.be\/[0-9A-Za-z_-]{6,}/
-    ]
-    return patterns.some(pattern => pattern.test(url))
+  const validateVideoUrl = (rawUrl: string): boolean => {
+    try {
+      const parsed = new URL(rawUrl.trim())
+      const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
+
+      if (host === 'youtu.be') {
+        return parsed.pathname.split('/').filter(Boolean)[0]?.length >= 6
+      }
+
+      if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+        if (parsed.pathname === '/watch') {
+          return (parsed.searchParams.get('v') || '').length >= 6
+        }
+
+        const parts = parsed.pathname.split('/').filter(Boolean)
+        return ['shorts', 'live', 'embed'].includes(parts[0]) && (parts[1] || '').length >= 6
+      }
+
+      if (host === 'b23.tv') {
+        return parsed.pathname.split('/').filter(Boolean).length > 0
+      }
+
+      if (host === 'bilibili.com') {
+        return /^\/video\/(BV[0-9A-Za-z]+|av\d+)/i.test(parsed.pathname)
+      }
+
+      return false
+    } catch {
+      return false
+    }
   }
 
   const parseVideoInfo = async () => {
@@ -119,7 +139,19 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
       
       return parsedVideoInfo
     } catch (error: unknown) {
-      setError('Insira um link de vídeo válido')
+      const apiError = error as {
+        response?: { data?: { detail?: string } }
+        userMessage?: string
+        message?: string
+      }
+
+      const detail =
+        apiError.response?.data?.detail ||
+        apiError.userMessage ||
+        apiError.message ||
+        'Não foi possível obter as informações deste vídeo.'
+
+      setError(detail)
       setVideoInfo(null)
     } finally {
       setParsing(false)
@@ -289,7 +321,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
                  alignItems: 'center',
                  gap: '8px'
                }}>
-                 <span>Insira um link de vídeo válido</span>
+                 <span>{error}</span>
                </div>
              )}
           </div>
