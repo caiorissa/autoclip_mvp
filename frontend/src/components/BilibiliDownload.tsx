@@ -10,7 +10,7 @@ interface BilibiliDownloadProps {
   onDownloadSuccess?: (projectId: string) => void
 }
 
-// 使用从API导入的BilibiliDownloadTask类型
+// Usa o tipo BilibiliDownloadTask importado da API
 
 const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }) => {
   const [url, setUrl] = useState('')
@@ -28,7 +28,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
   
 
 
-  // 从设置中获取默认浏览器
+  // Obtém o navegador padrão das configurações
   const loadDefaultBrowser = async () => {
     try {
       const response = await fetch('/api/settings')
@@ -37,11 +37,11 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
         setDefaultBrowser(settings.default_browser || '')
       }
     } catch (error) {
-      console.error('获取默认浏览器设置失败:', error)
+      console.error('Falha ao obter a configuração do navegador padrão:', error)
     }
   }
 
-  // 加载Categoria do vídeo配置和默认浏览器
+  // Carrega as categorias de vídeo e o navegador padrão
   useEffect(() => {
     const loadCategories = async () => {
       setLoadingCategories(true)
@@ -65,7 +65,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
     loadDefaultBrowser()
   }, [])
 
-  // 清理轮询
+  // Limpa o polling
   useEffect(() => {
     return () => {
       if (pollingInterval) {
@@ -98,7 +98,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
     }
 
     setParsing(true)
-    setError('') // 清除之前的错误信息
+    setError('') // Limpa a mensagem de erro anterior
     
     try {
       const requestBody: { url: string; browser?: string } = { url: url.trim() }
@@ -110,9 +110,9 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
       const parsedVideoInfo = response.video_info
       
       setVideoInfo(parsedVideoInfo)
-      setError('') // 解析成功，清除错误信息
+      setError('') // Análise concluída; limpa a mensagem de erro
       
-      // 自动填充项目名称
+      // Preenche automaticamente o nome do projeto
       if (!projectName && parsedVideoInfo.title) {
         setProjectName(parsedVideoInfo.title)
       }
@@ -142,7 +142,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
             onDownloadSuccess(task.project_id)
           }
           
-          // 重置状态
+          // Redefine o estado
           resetForm()
         } else if ((task.status === 'failed' || task.status === 'error')) {
           clearInterval(interval)
@@ -151,7 +151,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
           message.error(`Falha no download: ${task.error_message || task.error || 'Erro desconhecido'}`)
         }
       } catch (error: unknown) {
-        console.error('轮询任务状态失败:', error)
+        console.error('Falha ao consultar o status da tarefa:', error)
       }
     }, 2000)
     
@@ -197,7 +197,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
         updated_at: new Date().toISOString()
       })
       
-      // 开始轮询任务状态
+      // Inicia o polling do status da tarefa
       startPolling(response.task_id)
       
     } catch (error: unknown) {
@@ -233,7 +233,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
       margin: '0 auto'
     }}>
 
-      {/* 输入表单 */}
+      {/* Formulário de entrada */}
       <div style={{ marginBottom: '16px' }}>
         <Space direction="vertical" style={{ width: '100%' }} size={16}>
           <div>
@@ -242,7 +242,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
               value={url}
               onChange={(e) => {
                 setUrl(e.target.value)
-                // 清除之前的解析结果和错误信息
+                // Limpa o resultado anterior e as mensagens de erro
                 if (videoInfo) {
                   setVideoInfo(null)
                   setProjectName('')
@@ -252,7 +252,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
                 }
               }}
               onBlur={() => {
-                // 失去焦点时自动解析
+                // Analisa automaticamente ao perder o foco
                 if (url.trim() && !videoInfo && validateVideoUrl(url.trim())) {
                   parseVideoInfo();
                 }
@@ -294,7 +294,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
              )}
           </div>
           
-          {/* 显示解析成功的视频信息 */}
+          {/* Exibe as informações do vídeo analisado */}
           {videoInfo && (
             <div style={{
               background: 'rgba(102, 126, 234, 0.1)',
@@ -315,7 +315,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
             </div>
           )}
           
-          {/* 只有解析成功后才显示项目名称和分类 */}
+          {/* Só exibe nome e categoria após a análise do vídeo */}
           {videoInfo && (
             <>
               <div>
@@ -418,7 +418,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
         </Space>
       </div>
 
-      {/* 操作按钮 - 只有解析成功后才显示 */}
+      {/* Botões de ação — exibidos somente após a análise */}
       {videoInfo && (
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
           <Button
@@ -463,7 +463,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
         </div>
       )}
 
-      {/* 下载进度 */}
+      {/* Progresso do download */}
       {currentTask && (
         <Card
           style={{

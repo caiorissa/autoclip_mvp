@@ -75,7 +75,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
       destroyOnClose
     >
       <div className="modal-content">
-        {/* 头部 */}
+        {/* Cabeçalho */}
         <div className="modal-header">
           <div className="header-icon">
             <PlusOutlined />
@@ -88,7 +88,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
 
         <Divider className="header-divider" />
 
-        {/* 表单区域 */}
+        {/* Área do formulário */}
         <div className="form-section">
           {/* Título da coleção */}
           <div className="form-item">
@@ -123,7 +123,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
             />
           </div>
 
-          {/* 片段选择 */}
+          {/* Seleção de clipes */}
           <div className="form-item">
             <div className="form-label">
               <VideoCameraOutlined className="label-icon" />
@@ -131,7 +131,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
               <Text className="clip-count">(Selecionados: {selectedClips.length}  clipes）</Text>
             </div>
             
-            {/* 批量操作 */}
+            {/* Ações em lote */}
             <div className="batch-actions">
               <Button 
                 type="link" 
@@ -151,7 +151,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
               </Button>
             </div>
 
-            {/* 片段列表 */}
+            {/* Lista de clipes */}
             <div className="clips-container">
               {clips.map((clip) => (
                 <div 
@@ -183,7 +183,7 @@ const CreateCollectionModal: React.FC<CreateCollectionModalProps> = ({
           </div>
         </div>
 
-        {/* 底部操作 */}
+        {/* Ações inferiores */}
         <div className="modal-footer">
           <Button 
             onClick={handleCancel}

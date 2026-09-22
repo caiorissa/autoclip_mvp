@@ -350,7 +350,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 静态文件服务
+# Garante que os diretórios existam antes de montar os arquivos estáticos.
+Path("./output").mkdir(parents=True, exist_ok=True)
+Path("./uploads").mkdir(parents=True, exist_ok=True)
+Path("./data").mkdir(parents=True, exist_ok=True)
+
+# Arquivos estáticos
 app.mount("/static", StaticFiles(directory="output"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 

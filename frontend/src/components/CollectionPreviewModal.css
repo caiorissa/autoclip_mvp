@@ -23,7 +23,7 @@
   background: #0f0f0f;
 }
 
-/* 头部标题栏 */
+/* Barra de título */
 .preview-header {
   display: flex;
   justify-content: space-between;
@@ -84,13 +84,13 @@
   align-items: center;
 }
 
-/* 主体内容 */
+/* Conteúdo principal */
 .preview-content {
   flex: 1;
   overflow: hidden;
 }
 
-/* 视频区域 */
+/* Área do vídeo */
 .video-section {
   height: 100%;
   background: #000;
@@ -114,7 +114,7 @@
   justify-content: center;
 }
 
-/* 视频信息栏 - 固定在视频下方 */
+/* Barra de informações do vídeo — fixa abaixo do player */
 .video-info-bar {
   background: #1a1a1a;
   border-top: 1px solid #2d2d2d;
@@ -200,7 +200,7 @@
   color: #666;
 }
 
-/* 播放列表区域 */
+/* Área da lista de reprodução */
 .playlist-section {
   height: 100%;
   background: #1a1a1a;
@@ -236,7 +236,7 @@
   padding: 8px;
 }
 
-/* 切片项样式 */
+/* Estilo dos itens de clipe */
 .clip-item {
   display: flex;
   align-items: flex-start;
@@ -303,7 +303,7 @@
   cursor: grabbing;
 }
 
-/* 确保拖拽时不被其他元素阻挡 */
+/* Garante que outros elementos não bloqueiem o arraste */
 .clip-item.dragging {
   transform: rotate(2deg);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
@@ -367,7 +367,7 @@
   justify-content: center;
 }
 
-/* 滚动条样式 */
+/* Estilo da scrollbar */
 .clips-list::-webkit-scrollbar {
   width: 6px;
 }
@@ -386,7 +386,7 @@
   background: #555555;
 }
 
-/* 响应式设计 */
+/* Design responsivo */
 @media (max-width: 1200px) {
   .collection-preview-modal .ant-modal {
     width: 95vw !important;
@@ -433,7 +433,7 @@
   }
 }
 
-/* 动画效果 */
+/* Efeitos de animação */
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
@@ -464,29 +464,29 @@
   animation: slideInRight 0.3s ease-out;
 }
 
-/* 加载状态 */
+/* Estado de carregamento */
 .clip-item .ant-btn-loading {
   pointer-events: none;
 }
 
-/* 拖拽时的占位符样式 */
+/* Estilo do placeholder durante o arraste */
 .clips-list .ant-empty {
   margin: 0;
   padding: 20px;
 }
 
-/* 确保模态框在最顶层 */
+/* Garante que o modal fique acima dos outros elementos */
 .collection-preview-modal {
   z-index: 1050;
 }
 
-/* 播放按钮悬停效果 */
+/* Efeito de hover do botão de reprodução */
 .video-controls .ant-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: transparent;
 }
 
-/* 标签样式优化 */
+/* Ajustes de estilo das etiquetas */
 .video-meta .ant-tag {
   margin: 0;
   border: none;
@@ -494,7 +494,7 @@
   padding: 2px 6px;
 }
 
-/* 头部按钮样式 */
+/* Estilo dos botões do cabeçalho */
 .header-right .ant-btn {
   border-color: rgba(255, 255, 255, 0.3);
 }
@@ -504,7 +504,7 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* 拖拽占位符 */
+/* Placeholder de arraste */
 .drag-placeholder {
   height: 80px;
   border: 2px dashed #404040;
@@ -518,7 +518,7 @@
   background: #262626;
 }
 
-/* 加载状态 */
+/* Estado de carregamento */
 .loading-container {
   display: flex;
   align-items: center;

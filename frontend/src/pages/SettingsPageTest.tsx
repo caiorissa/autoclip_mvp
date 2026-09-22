@@ -13,13 +13,13 @@ const SettingsPageTest: React.FC = () => {
     <Content className="settings-page">
       <div className="settings-container">
         <Title level={2} className="settings-title">
-          <SettingOutlined /> 系统配置测试
+          <SettingOutlined /> Teste das configurações do sistema
         </Title>
         
-        <Card title="API 配置" className="settings-card">
+        <Card title="Configuração da API" className="settings-card">
           <Alert
-            message="配置说明"
-            description="请配置通义千问API密钥以启用AI自动切片功能。您可以在阿里云控制台获取API密钥。"
+            message="Como configurar"
+            description="Configure uma chave de API para ativar o clipping automático com IA."
             type="info"
             showIcon
             className="settings-alert"
@@ -41,12 +41,12 @@ const SettingsPageTest: React.FC = () => {
               name="dashscope_api_key"
               className="form-item"
               rules={[
-                { required: true, message: '请输入API密钥' },
-                { min: 10, message: 'API密钥长度不能少于10位' }
+                { required: true, message: 'Digite a chave da API' },
+                { min: 10, message: 'A chave da API deve ter pelo menos 10 caracteres' }
               ]}
             >
               <Input.Password
-                placeholder="请输入通义千问API密钥"
+                placeholder="Digite a chave da API"
                 prefix={<KeyOutlined />}
                 className="settings-input"
               />
@@ -58,18 +58,18 @@ const SettingsPageTest: React.FC = () => {
                 icon={<ApiOutlined />}
                 className="test-button"
               >
-                测试连接
+                Testar conexão
               </Button>
             </Form.Item>
 
             <Divider className="settings-divider" />
 
-            <Title level={4} className="section-title">模型配置</Title>
+            <Title level={4} className="section-title">Configuração do modelo</Title>
             
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label="模型名称"
+                  label="Nome do modelo"
                   name="model_name"
                   className="form-item"
                 >
@@ -78,14 +78,14 @@ const SettingsPageTest: React.FC = () => {
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label="文本分块大小"
+                  label="Tamanho dos blocos de texto"
                   name="chunk_size"
                   className="form-item"
                 >
                   <Input 
                     type="number" 
                     placeholder="5000" 
-                    addonAfter="字符" 
+                    addonAfter="caracteres" 
                     className="settings-input"
                   />
                 </Form.Item>
@@ -95,7 +95,7 @@ const SettingsPageTest: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
-                  label="最低评分阈值"
+                  label="Pontuação mínima"
                   name="min_score_threshold"
                   className="form-item"
                 >
@@ -111,14 +111,14 @@ const SettingsPageTest: React.FC = () => {
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label="每个合集最大切片数"
+                  label="Máximo de clipes por coleção"
                   name="max_clips_per_collection"
                   className="form-item"
                 >
                   <Input 
                     type="number" 
                     placeholder="5" 
-                    addonAfter="个" 
+                    addonAfter="clipes" 
                     className="settings-input"
                   />
                 </Form.Item>
@@ -133,40 +133,40 @@ const SettingsPageTest: React.FC = () => {
                 size="large"
                 className="save-button"
               >
-                保存配置
+                Salvar configuração
               </Button>
             </Form.Item>
           </Form>
         </Card>
 
-        <Card title="使用说明" className="settings-card">
+        <Card title="Como usar" className="settings-card">
           <Space direction="vertical" size="large" className="instructions-space">
             <div className="instruction-item">
               <Title level={5} className="instruction-title">
-                <InfoCircleOutlined /> 1. 获取API密钥
+                <InfoCircleOutlined /> 1. Obter uma chave de API
               </Title>
               <Paragraph className="instruction-text">
-                访问阿里云控制台 → 人工智能 → 通义千问 → API密钥管理，创建新的API密钥
+                Acesse o painel do seu provedor de IA e crie uma nova chave de API
               </Paragraph>
             </div>
             
             <div className="instruction-item">
               <Title level={5} className="instruction-title">
-                <InfoCircleOutlined /> 2. 配置参数说明
+                <InfoCircleOutlined /> 2. Entender os parâmetros
               </Title>
               <Paragraph className="instruction-text">
-                • <Text strong>文本分块大小</Text>：影响处理速度和精度，建议5000字符<br />
-                • <Text strong>评分阈值</Text>：只有高于此分数的片段才会被保留<br />
-                • <Text strong>合集切片数</Text>：控制每个主题合集包含的片段数量
+                • <Text strong>Tamanho dos blocos de texto</Text>: afeta velocidade e precisão; recomendamos 5000 caracteres<br />
+                • <Text strong>Pontuação mínima</Text>: somente clipes acima desse valor serão mantidos<br />
+                • <Text strong>Clipes por coleção</Text>: controla quantos clipes cada coleção temática pode conter
               </Paragraph>
             </div>
             
             <div className="instruction-item">
               <Title level={5} className="instruction-title">
-                <InfoCircleOutlined /> 3. 测试连接
+                <InfoCircleOutlined /> 3. Testar conexão
               </Title>
               <Paragraph className="instruction-text">
-                保存前建议先测试API密钥是否有效，确保服务正常运行
+                Antes de salvar, teste a chave da API para verificar se o serviço está funcionando
               </Paragraph>
             </div>
           </Space>

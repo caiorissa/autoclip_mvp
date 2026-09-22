@@ -25,7 +25,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
 
 
 
-  // 生成视频缩略图
+  // Gera a miniatura do vídeo
   useEffect(() => {
     if (videoUrl) {
       generateThumbnail()
@@ -37,7 +37,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
     
     const video = document.createElement('video')
     video.crossOrigin = 'anonymous'
-    video.currentTime = 1 // 获取第1秒的帧作为缩略图
+    video.currentTime = 1 // Captura o quadro do primeiro segundo como miniatura
     
     video.onloadeddata = () => {
       const canvas = document.createElement('canvas')
@@ -59,7 +59,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
     try {
       const fileName = `${clip.generated_title || clip.title || 'Clipe de vídeo'}.mp4`
       
-      // 使用fetch获取视频文件
+      // Obtém o arquivo de vídeo com fetch
       const response = await fetch(videoUrl || '')
       if (!response.ok) {
         throw new Error('Falha no download')
@@ -67,25 +67,25 @@ const ClipCard: React.FC<ClipCardProps> = ({
       
       const blob = await response.blob()
       
-      // 创建下载链接
+      // Cria o link de download
       const downloadUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = downloadUrl
       link.download = fileName
       
-      // 触发下载
+      // Inicia o download
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       
-      // 清理URL对象
+      // Libera o objeto URL
       window.URL.revokeObjectURL(downloadUrl)
       
-      // 同时调用原有的下载方法
+      // Também chama o método de download existente
       onDownload(clip.id)
     } catch (error) {
       console.error('Falha no download:', error)
-      // 如果fetch失败，回退到原来的方法
+      // Se o fetch falhar, usa o método anterior como fallback
       const fileName = `${clip.generated_title || clip.title || 'Clipe de vídeo'}.mp4`
       const link = document.createElement('a')
       link.href = videoUrl || ''
@@ -98,7 +98,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
   }
 
   const handleClosePlayer = () => {
-    // 停止视频播放
+    // Interrompe a reprodução do vídeo
     if (playerRef.current) {
       playerRef.current.seekTo(0)
     }
@@ -108,12 +108,12 @@ const ClipCard: React.FC<ClipCardProps> = ({
 
 
   const formatTime = (timeStr: string) => {
-    // 将 SRT 时间格式转换为显示格式
+    // Converte o tempo SRT para o formato exibido
     return timeStr.replace(',', '.').substring(0, 8)
   }
 
   const getDuration = () => {
-    // 简单计算时长（实际项目中应该更精确）
+    // Calcula a duração de forma simples
     const start = clip.start_time.split(':')
     const end = clip.end_time.split(':')
     const startSeconds = parseInt(start[0]) * 3600 + parseInt(start[1]) * 60 + parseFloat(start[2].replace(',', '.'))
@@ -129,7 +129,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
     return '#ff4d4f'
   }
 
-  // 生成内容要点的tooltip内容
+  // Gera o conteúdo do tooltip com os pontos principais
   const getContentTooltip = () => {
     if (clip.content && clip.content.length > 0) {
       return (
@@ -199,7 +199,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
                 <PlayCircleOutlined style={{ fontSize: '56px', color: 'white' }} />
               </div>
               
-              {/* 顶部信息栏 */}
+              {/* Barra superior de informações */}
               <div 
                 style={{
                   position: 'absolute',
@@ -243,7 +243,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
                 </div>
               </div>
               
-              {/* 底部信息栏 */}
+              {/* Barra inferior de informações */}
               <div 
                 style={{
                   position: 'absolute',
@@ -279,14 +279,14 @@ const ClipCard: React.FC<ClipCardProps> = ({
                   }}
                 >
                   <StarFilled style={{ fontSize: '12px' }} />
-                  {(clip.final_score * 100).toFixed(0)}分
+                  {(clip.final_score * 100).toFixed(0)} pontos
                 </div>
               </div>
             </div>
           }
         >
           <div style={{ padding: '16px', height: '180px', display: 'flex', flexDirection: 'column' }}>
-            {/* 标题区域 */}
+            {/* Área do título */}
             <div style={{ marginBottom: '12px' }}>
               <Title 
                 level={5} 
@@ -304,7 +304,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
               </Title>
             </div>
             
-            {/* 推荐理由 */}
+            {/* Motivo da recomendação */}
             <div style={{ flex: 1, marginBottom: '12px' }}>
               <Text 
                 type="secondary" 
@@ -327,7 +327,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
         </Card>
       </Tooltip>
 
-      {/* 视频播放模态框 */}
+      {/* Modal de reprodução do vídeo */}
       <Modal
         title={clip.generated_title || clip.title || 'Prévia do vídeo'}
         open={showPlayer}

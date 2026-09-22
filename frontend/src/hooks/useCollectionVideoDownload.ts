@@ -14,26 +14,26 @@ export const useCollectionVideoDownload = () => {
     setIsGenerating(true)
     
     try {
-      // 第一步：开始生成视频
-      message.info('开始生成合集视频...')
+      // Etapa 1: inicia a geração do vídeo
+      message.info('Gerando vídeo da coleção...')
       await projectApi.generateCollectionVideo(projectId, collectionId)
       
-      // 第二步：等待3秒让后端完成文件生成，然后直接下载
-      message.success('合集视频生成成功，正在下载...')
+      // Etapa 2: aguarda o backend concluir o arquivo e inicia o download
+      message.success('Vídeo da coleção gerado com sucesso. Iniciando download...')
       
       setTimeout(async () => {
         try {
           await projectApi.downloadVideo(projectId, undefined, collectionId)
-          message.success('合集视频下载完成')
+          message.success('Download do vídeo da coleção concluído')
         } catch (downloadError) {
-          console.error('下载失败:', downloadError)
-          message.error('下载失败，请稍后重试')
+          console.error('Falha no download:', downloadError)
+          message.error('Falha no download. Tente novamente em instantes.')
         }
-      }, 3000) // 等待3秒让后端完成文件生成
+      }, 3000) // Aguarda o backend concluir a geração do arquivo
       
     } catch (error) {
-      console.error('生成合集视频失败:', error)
-      message.error('导出合集视频失败')
+      console.error('Falha ao gerar o vídeo da coleção:', error)
+      message.error('Falha ao exportar o vídeo da coleção')
     } finally {
       setIsGenerating(false)
     }

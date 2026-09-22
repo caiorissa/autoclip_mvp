@@ -3,15 +3,15 @@ import { projectApi } from '../services/api'
 
 export interface Clip {
   id: string
-  title?: string  // 可能没有原始title
+  title?: string  // Pode não haver um título original
   start_time: string
   end_time: string
-  final_score: number  // 匹配后端字段名
-  recommend_reason: string  // 匹配后端字段名
+  final_score: number  // Corresponde ao nome do campo no backend
+  recommend_reason: string  // Corresponde ao nome do campo no backend
   generated_title?: string
   outline: string
   content: string[]
-  chunk_index?: number  // 添加缺失字段
+  chunk_index?: number  // Adiciona o campo ausente
 }
 
 export interface Collection {
@@ -85,7 +85,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       projectsCount: projects.length
     })
     
-    // 如果正在拖拽或最近5秒内有编辑操作，则跳过更新以避免冲突
+    // Se houver arraste ou edição nos últimos 5 segundos, ignora a atualização para evitar conflitos
     if (state.isDragging) {
       console.log('Skipping update: dragging in progress')
       return
@@ -114,7 +114,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   })),
   
   deleteProject: (id) => {
-    // 清理缩略图缓存
+    // Limpa o cache de miniaturas
     const thumbnailCacheKey = `thumbnail_${id}`
     localStorage.removeItem(thumbnailCacheKey)
     
@@ -206,13 +206,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     const originalClipIds = [...collection.clip_ids]
     const updatedClipIds = collection.clip_ids.filter(id => id !== clipId)
     
-    // 检查是否真的有变化
+    // Verifica se houve alguma alteração real
     if (originalClipIds.length === updatedClipIds.length) {
       console.log('Clip not found in collection, skipping update')
       return
     }
     
-    // 乐观更新：立即更新前端状态
+    // Atualização otimista: altera o estado do frontend imediatamente
     const updateState = (clipIds: string[]) => {
       set((state) => ({
         projects: state.projects.map(project => 
@@ -247,10 +247,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }))
     }
     
-    // 立即应用更新
+    // Aplica a atualização imediatamente
     updateState(updatedClipIds)
     
-    // 调用后端API
+    // Chama a API do backend
     try {
       console.log('Removing clip from collection:', { projectId, collectionId, clipId })
       await projectApi.updateCollection(projectId, collectionId, { clip_ids: updatedClipIds })
@@ -263,7 +263,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         statusText: (error as unknown)?.response?.statusText,
         data: (error as unknown)?.response?.data
       })
-      // 回滚到原始状态
+      // Reverte para o estado original
       updateState(originalClipIds)
       throw error
     }
@@ -274,7 +274,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   reorderCollectionClips: async (projectId: string, collectionId: string, newClipIds: string[]) => {
     console.log('Starting reorderCollectionClips:', { projectId, collectionId, newClipIds })
     
-    // 获取原始状态
+    // Obtém o estado original
     const state = get()
     const originalProject = state.projects.find(p => p.id === projectId)
     const originalCollection = originalProject?.collections.find(c => c.id === collectionId)
@@ -285,16 +285,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     
     const originalClipIds = [...originalCollection.clip_ids]
     
-    // 检查是否真的有变化
+    // Verifica se houve alguma alteração real
     if (JSON.stringify(originalClipIds) === JSON.stringify(newClipIds)) {
       console.log('No changes detected, skipping update')
       return
     }
     
-    // 记录编辑时间戳
+    // Registra o horário da edição
     const now = Date.now()
     
-    // 乐观更新：立即更新前端状态
+    // Atualização otimista: altera o estado do frontend imediatamente
     const updateState = (clipIds: string[]) => {
       set((state) => ({
         projects: state.projects.map(project => 
@@ -323,10 +323,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }))
     }
     
-    // 立即应用新顺序
+    // Aplica a nova ordem imediatamente
     updateState(newClipIds)
     
-    // 调用后端API
+    // Chama a API do backend
     try {
       console.log('Calling backend API:', { projectId, collectionId, newClipIds })
       const result = await projectApi.updateCollection(projectId, collectionId, { clip_ids: newClipIds })
@@ -339,7 +339,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         statusText: (error as unknown)?.response?.statusText,
         data: (error as unknown)?.response?.data
       })
-      // 回滚到原始状态
+      // Reverte para o estado original
       updateState(originalClipIds)
       throw error
     }
@@ -355,16 +355,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }
     
     const originalClipIds = [...collection.clip_ids]
-    // 合并现有的clip_ids和新的clipIds，去重
+    // Combina os clip_ids existentes com os novos clipIds, removendo duplicados
     const updatedClipIds = [...new Set([...collection.clip_ids, ...clipIds])]
     
-    // 检查是否真的有变化
+    // Verifica se houve alguma alteração real
     if (originalClipIds.length === updatedClipIds.length) {
       console.log('No new clips to add, skipping update')
       return
     }
     
-    // 乐观更新：立即更新前端状态
+    // Atualização otimista: altera o estado do frontend imediatamente
     const updateState = (clipIds: string[]) => {
       set((state) => ({
         projects: state.projects.map(project => 
@@ -399,10 +399,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }))
     }
     
-    // 立即应用更新
+    // Aplica a atualização imediatamente
     updateState(updatedClipIds)
     
-    // 调用后端API保存更新
+    // Chama a API do backend para salvar a atualização
     try {
       console.log('Adding clips to collection:', { projectId, collectionId, clipIds, updatedClipIds })
       await projectApi.updateCollection(projectId, collectionId, { clip_ids: updatedClipIds })
@@ -415,7 +415,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         statusText: (error as unknown)?.response?.statusText,
         data: (error as unknown)?.response?.data
       })
-      // 回滚到原始状态
+      // Reverte para o estado original
       updateState(originalClipIds)
       throw error
     }

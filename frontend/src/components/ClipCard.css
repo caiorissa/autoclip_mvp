@@ -33,14 +33,14 @@
   transform: scale(1.05);
 }
 
-/* 自定义按钮悬停效果 */
+/* Efeito de hover personalizado dos botões */
 .clip-card .ant-btn-primary:hover {
   background: linear-gradient(45deg, #40a9ff, #52c41a) !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 
-/* 评分标签动画 */
+/* Animação da etiqueta de pontuação */
 .clip-card:hover [style*="getScoreColor"] {
   transform: scale(1.05);
   transition: transform 0.2s ease;
