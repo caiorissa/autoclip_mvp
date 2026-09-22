@@ -34,7 +34,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [currentLogIndex, setCurrentLogIndex] = useState(0)
 
-  // 获取分类信息
+  // Obtém informações da categoria
   const getCategoryInfo = (category?: string) => {
     const categoryMap: Record<string, { name: string; icon: string; color: string }> = {
       'default': { name: 'Padrão', icon: '🎬', color: '#4facfe' },
@@ -49,15 +49,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
     return categoryMap[category || 'default'] || categoryMap['default']
   }
 
-  // 缩略图缓存管理
+  // Gerenciamento do cache de miniaturas
   const thumbnailCacheKey = `thumbnail_${project.id}`
   
-  // 生成项目视频缩略图（带缓存）
+  // Gera a miniatura do vídeo do projeto com cache
   useEffect(() => {
     const generateThumbnail = async () => {
       if (!project.video_path) return
       
-      // 检查缓存
+      // Verifica o cache
       const cachedThumbnail = localStorage.getItem(thumbnailCacheKey)
       if (cachedThumbnail) {
         setVideoThumbnail(cachedThumbnail)
@@ -74,7 +74,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
         const videoUrl = projectApi.getProjectFileUrl(project.id, 'input/input.mp4')
         
         video.onloadedmetadata = () => {
-          video.currentTime = Math.min(5, video.duration / 4) // 取视频1/4处或5秒处的帧
+          video.currentTime = Math.min(5, video.duration / 4) // Captura um quadro em 1/4 do vídeo ou aos 5 segundos
         }
         
         video.onseeked = () => {
@@ -83,7 +83,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             const ctx = canvas.getContext('2d')
             if (!ctx) return
             
-            // Configurações合适的缩略图尺寸
+            // Define um tamanho adequado para a miniatura
             const maxWidth = 320
             const maxHeight = 180
             const aspectRatio = video.videoWidth / video.videoHeight
@@ -104,32 +104,32 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             const thumbnail = canvas.toDataURL('image/jpeg', 0.7)
             setVideoThumbnail(thumbnail)
             
-            // 缓存缩略图
+            // Salva a miniatura no cache
             try {
               localStorage.setItem(thumbnailCacheKey, thumbnail)
             } catch (e) {
-              // 如果localStorage空间不足，清理旧缓存
+              // Se o localStorage estiver cheio, remove caches antigos
               const keys = Object.keys(localStorage).filter(key => key.startsWith('thumbnail_'))
-              if (keys.length > 50) { // 保留最多50个缩略图缓存
+              if (keys.length > 50) { // Mantém no máximo 50 miniaturas em cache
                 keys.slice(0, 10).forEach(key => localStorage.removeItem(key))
                 localStorage.setItem(thumbnailCacheKey, thumbnail)
               }
             }
           } catch (error) {
-            console.error('生成缩略图Falha:', error)
+            console.error('Falha ao gerar miniatura:', error)
           } finally {
             setThumbnailLoading(false)
           }
         }
         
         video.onerror = (error) => {
-          console.error('视频加载Falha:', error)
+          console.error('Falha ao carregar vídeo:', error)
           setThumbnailLoading(false)
         }
         
         video.src = videoUrl
       } catch (error) {
-        console.error('生成缩略图时发生错误:', error)
+        console.error('Erro ao gerar miniatura:', error)
         setThumbnailLoading(false)
       }
     }
@@ -137,7 +137,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
     generateThumbnail()
   }, [project.id, project.video_path, thumbnailCacheKey])
 
-  // 获取项目日志（仅在Processando时）
+  // Obtém os logs do projeto apenas durante o processamento
   useEffect(() => {
     if (project.status !== 'processing') {
       setLogs([])
@@ -149,32 +149,32 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
         const response = await projectApi.getProjectLogs(project.id, 20)
         setLogs(response.logs.filter(log => 
           log.message.includes('Step') || 
-          log.message.includes('开始') || 
-          log.message.includes('完成') ||
-          log.message.includes('处理') ||
+          log.message.includes('inici') || 
+          log.message.includes('conclu') ||
+          log.message.includes('process') ||
           log.level === 'ERROR'
         ))
       } catch (error) {
-        console.error('获取日志Falha:', error)
+        console.error('Falha ao obter logs:', error)
       }
     }
 
-    // 立即获取一次
+    // Executa uma consulta imediatamente
     fetchLogs()
     
-    // 每3秒更新一次日志
+    // Atualiza os logs a cada 3 segundos
     const logInterval = setInterval(fetchLogs, 3000)
     
     return () => clearInterval(logInterval)
   }, [project.id, project.status])
 
-  // 日志轮播
+  // Rotação dos logs
   useEffect(() => {
     if (logs.length <= 1) return
     
     const interval = setInterval(() => {
       setCurrentLogIndex(prev => (prev + 1) % logs.length)
-    }, 2000) // 每2秒切换一条日志
+    }, 2000) // Alterna uma mensagem de log a cada 2 segundos
     
     return () => clearInterval(interval)
   }, [logs.length])
@@ -194,7 +194,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
         onRetry(project.id)
       }
     } catch (error) {
-      console.error('重试Falha:', error)
+      console.error('Falha ao tentar novamente:', error)
       message.error('Falha ao tentar novamente. Tente mais tarde.')
     } finally {
       setIsRetrying(false)
@@ -253,7 +253,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             }
           }}
         >
-          {/* 缩略图加载状态 */}
+          {/* Estado de carregamento da miniatura */}
           {thumbnailLoading && (
             <div style={{ 
               textAlign: 'center',
@@ -274,7 +274,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             </div>
           )}
           
-          {/* 无缩略图时的Padrão显示 */}
+          {/* Exibição padrão quando não há miniatura */}
           {!videoThumbnail && !thumbnailLoading && (
             <div style={{ textAlign: 'center' }}>
               <PlayCircleOutlined 
@@ -295,7 +295,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             </div>
           )}
           
-          {/* 分类标签 - 左上角 */}
+          {/* Etiqueta da categoria — canto superior esquerdo */}
           {project.video_category && project.video_category !== 'default' && (
             <div style={{
               position: 'absolute',
@@ -322,9 +322,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             </div>
           )}
           
-          {/* 移除右上角状态指示器 - 可读性差且冗余 */}
+          {/* Remove o indicador de status do canto superior direito por ser redundante */}
           
-          {/* 更新时间和操作按钮 - 移动到封面底部 */}
+          {/* Data de atualização e ações — movidas para a parte inferior da capa */}
           <div style={{
             position: 'absolute',
             bottom: '0',
@@ -343,7 +343,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
               {dayjs(project.updated_at).fromNow()}
             </Text>
             
-            {/* 操作按钮 */}
+            {/* Botões de ação */}
             <div 
               className="card-action-buttons"
               style={{
@@ -353,7 +353,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                 transition: 'opacity 0.3s ease'
               }}
             >
-              {/* Falha状态：只显示重试和删除按钮 */}
+              {/* Estado de falha: mostra apenas tentar novamente e excluir */}
               {project.status === 'error' ? (
                 <>
                   <Button
@@ -411,10 +411,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                   </Popconfirm>
                 </>
               ) : (
-                /* 其他状态：显示下载和删除按钮 */
+                /* Outros estados: mostra baixar e excluir */
                 <>
                   <Space size={4}>
-                    {/* 下载按钮 - 仅在完成状态显示 */}
+                    {/* Botão de download — somente quando concluído */}
                     {project.status === 'completed' && (
                       <Tooltip title="Baixar todos os arquivos em ZIP" placement="top">
                         <Button
@@ -429,7 +429,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                               message.success('Download concluído!')
                             } catch (error) {
                               message.destroy()
-                              console.error('下载Falha:', error)
+                              console.error('Falha no download:', error)
                               message.error('Falha no download. Tente novamente mais tarde.')
                             }
                           }}
@@ -448,7 +448,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                       </Tooltip>
                     )}
                     
-                    {/* 删除按钮 */}
+                    {/* Botão de excluir */}
                     <Popconfirm
                       title="Tem certeza de que deseja excluir este projeto?"
                       description="Esta ação não pode ser desfeita"
@@ -491,7 +491,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
     >
       <div style={{ padding: '0', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
-          {/* 仅在Processando时显示实时日志 */}
+          {/* Exibe logs em tempo real somente durante o processamento */}
           {project.status === 'processing' && logs.length > 0 && (
             <div style={{ marginBottom: '8px' }}>
                 <div style={{
@@ -551,7 +551,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             </div>
           )}
           
-          {/* 项目名称 */}
+          {/* Nome do projeto */}
           <div style={{ marginBottom: '12px', position: 'relative' }}>
             <Tooltip title={project.name} placement="top">
               <Text 
@@ -575,12 +575,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             </Tooltip>
           </div>
           
-          {/* 状态和统计信息 */}
+          {/* Status e estatísticas */}
           <div style={{ 
             display: 'flex', 
             gap: '6px'
           }}>
-            {/* 状态显示 */}
+            {/* Exibição do status */}
             <div style={{
               background: project.status === 'completed' ? 'rgba(82, 196, 26, 0.15)' :
                          project.status === 'processing' ? 'rgba(24, 144, 255, 0.15)' :
@@ -620,7 +620,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
               </div>
             </div>
             
-            {/* Clipes数量 */}
+            {/* Quantidade de clipes */}
             <div style={{
               background: 'rgba(102, 126, 234, 0.15)',
               border: '1px solid rgba(102, 126, 234, 0.3)',
@@ -637,7 +637,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
               </div>
             </div>
             
-            {/* Coleções数量 */}
+            {/* Quantidade de coleções */}
             <div style={{
               background: 'rgba(118, 75, 162, 0.15)',
               border: '1px solid rgba(118, 75, 162, 0.3)',
