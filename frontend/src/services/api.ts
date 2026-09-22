@@ -29,20 +29,20 @@ api.interceptors.response.use(
     
     // 特殊处理429错误（系统繁忙）
     if (error.response?.status === 429) {
-      const message = error.response?.data?.detail || '系统正在处理其他项目，请稍后再试'
+      const message = error.response?.data?.detail || 'O sistema está processando outro projeto. Tente novamente em instantes.'
       error.userMessage = message
     }
     // 处理超时错误
     else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-      error.userMessage = '请求超时，项目可能仍在后台处理中，请稍后查看项目状态'
+      error.userMessage = 'A solicitação expirou, mas o projeto pode continuar processando. Verifique o status em instantes.'
     }
     // 处理网络错误
     else if (error.code === 'NETWORK_ERROR' || !error.response) {
-      error.userMessage = '网络连接失败，请检查网络连接'
+      error.userMessage = 'Falha na conexão de rede. Verifique sua conexão.'
     }
     // 处理服务器错误
     else if (error.response?.status >= 500) {
-      error.userMessage = '服务器内部错误，请稍后重试'
+      error.userMessage = 'Erro interno do servidor. Tente novamente mais tarde.'
     }
     
     return Promise.reject(error)
@@ -80,15 +80,16 @@ export interface ProcessingStatus {
 
 // B站相关接口类型
 export interface BilibiliVideoInfo {
+  bvid?: string
   title: string
   description: string
   duration: number
   uploader: string
   upload_date: string
   view_count: number
-  like_count: number
-  thumbnail: string
-  url: string
+  thumbnail_url?: string
+  webpage_url?: string
+  platform?: 'youtube' | 'bilibili' | string
 }
 
 export interface BilibiliDownloadRequest {
@@ -104,9 +105,11 @@ export interface BilibiliDownloadTask {
   project_name: string
   video_category?: string
   browser?: string
-  status: 'pending' | 'downloading' | 'completed' | 'failed'
+  status: 'pending' | 'downloading' | 'processing' | 'completed' | 'error' | 'failed'
   progress: number
+  status_message?: string
   error_message?: string
+  error?: string
   video_info?: BilibiliVideoInfo
   project_id?: string
   created_at: string
