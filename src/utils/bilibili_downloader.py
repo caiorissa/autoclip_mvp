@@ -197,8 +197,14 @@ class BilibiliDownloader:
             video_path = self._find_downloaded_video(safe_title)
             subtitle_path = self._find_downloaded_subtitle(safe_title)
             
+            if not subtitle_path:
+                raise ProcessingError(
+                    "Não foi possível obter legendas para este vídeo. "
+                    "O AutoClip precisa de legendas manuais ou automáticas para analisar o conteúdo."
+                )
+
             if progress_callback:
-                progress_callback("下载完成", 100)
+                progress_callback("Download concluído", 100)
             
             result = {
                 'video_path': str(video_path) if video_path else '',
@@ -343,7 +349,21 @@ class BilibiliDownloader:
         """查找下载的字幕文件 - 简化版本，专注AI字幕"""
         logger.info(f"正在查找字幕文件，标题: {title}")
         
-        # 首先检查AI字幕文件
+        # Prioriza legendas em português, depois inglês e chinês.
+        preferred_suffixes = [
+            '.pt-BR.srt', '.pt.srt', '.en.srt', '.en-US.srt',
+            '.zh-Hans.srt', '.zh-CN.srt', '.zh.srt', '.ai-zh.srt'
+        ]
+        for suffix in preferred_suffixes:
+            candidate = self.download_dir / f"{title}{suffix}"
+            if candidate.exists():
+                standard_path = self.download_dir / f"{title}.srt"
+                if candidate != standard_path and not standard_path.exists():
+                    candidate.rename(standard_path)
+                    return standard_path
+                return candidate
+
+        # Compatibilidade com o formato antigo do Bilibili.
         ai_subtitle_path = self.download_dir / f"{title}.ai-zh.srt"
         if ai_subtitle_path.exists():
             # 重命名为标准格式
