@@ -13,6 +13,7 @@ from typing import Dict, Any, Optional, Callable
 from datetime import datetime
 import yt_dlp
 import subprocess
+import sys
 
 try:
     from .error_handler import FileIOError, ValidationError, ProcessingError
@@ -97,39 +98,66 @@ class BilibiliDownloader:
         return 'unknown'
 
     async def get_video_info(self, url: str) -> BilibiliVideoInfo:
-        """
-        获取视频信息（不下载）
-        
-        Args:
-            url: 视频链接
-            
-        Returns:
-            视频信息对象
-        """
+        """Obtém os metadados do vídeo sem fazer o download."""
         if not self.validate_video_url(url):
             raise ValidationError(f"Link de vídeo não suportado: {url}")
-        
-        ydl_opts = {
+
+        platform = self.detect_platform(url)
+        base_opts = {
             'quiet': True,
             'no_warnings': True,
+            'noplaylist': True,
         }
-        
+
+        attempts = [base_opts]
+
+        # No YouTube, cookies de navegador podem acionar um cliente problemático.
+        # Primeiro tenta como visitante; usa cookies apenas como fallback.
         if self.browser:
-            ydl_opts['cookies_from_browser'] = self.browser.lower()
-            logger.info(f'yt-dlp cookies_from_browser: {ydl_opts.get("cookies_from_browser")}')
-        
-        try:
-            loop = asyncio.get_event_loop()
-            info_dict = await loop.run_in_executor(
-                None, 
-                self._extract_info_sync, 
-                url, 
-                ydl_opts
-            )
-            return BilibiliVideoInfo(info_dict)
-        except Exception as e:
-            raise ProcessingError(f"获取视频信息失败: {str(e)}")
-    
+            browser = self.browser.lower()
+            cookie_opts = dict(base_opts)
+            cookie_opts['cookiesfrombrowser'] = (browser,)
+            if platform == 'youtube':
+                cookie_opts['extractor_args'] = {
+                    'youtube': {
+                        'player_client': ['default', 'web_embedded']
+                    }
+                }
+            attempts.append(cookie_opts)
+
+        last_error = None
+        for index, opts in enumerate(attempts):
+            try:
+                loop = asyncio.get_event_loop()
+                info_dict = await loop.run_in_executor(
+                    None,
+                    self._extract_info_sync,
+                    url,
+                    opts
+                )
+                return BilibiliVideoInfo(info_dict)
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    "Falha ao obter metadados (%s/%s): %s",
+                    index + 1,
+                    len(attempts),
+                    self._clean_error_text(str(exc))
+                )
+
+        clean_error = self._clean_error_text(str(last_error)) if last_error else "erro desconhecido"
+        raise ProcessingError(f"Falha ao obter informações do vídeo: {clean_error}")
+
+    @staticmethod
+    def _clean_error_text(text: str) -> str:
+        """Remove sequências ANSI e reduz mensagens de erro do yt-dlp."""
+        if not text:
+            return ""
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\\[[0-?]*[ -/]*[@-~])')
+        cleaned = ansi_escape.sub('', text)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned
+
     def _extract_info_sync(self, url: str, ydl_opts: Dict[str, Any]) -> Dict[str, Any]:
         """同步方式提取视频信息"""
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -173,10 +201,6 @@ class BilibiliDownloader:
             'progress': True,
         }
         
-        if self.browser:
-            ydl_opts['cookies_from_browser'] = self.browser.lower()
-            logger.info(f'yt-dlp cookies_from_browser: {ydl_opts.get("cookies_from_browser")}')
-        
         # 添加进度钩子
         if progress_callback:
             ydl_opts['progress_hooks'] = [self._create_progress_hook(progress_callback)]
@@ -212,18 +236,19 @@ class BilibiliDownloader:
                 'video_info': video_info.to_dict()
             }
             
-            logger.info(f"下载完成: {video_info.title}")
+            logger.info(f"Download concluído: {video_info.title}")
             return result
             
         except Exception as e:
-            error_msg = f"下载失败: {str(e)}"
+            error_msg = f"Falha no download: {self._clean_error_text(str(e))}"
             if progress_callback:
                 progress_callback(error_msg, 0)
             raise ProcessingError(error_msg)
     
     def _download_sync(self, url: str, ydl_opts: Dict[str, Any]):
-        """Baixa vídeo e legendas via yt-dlp, com suporte a YouTube e Bilibili."""
+        """Baixa vídeo e legendas via yt-dlp, com fallback específico para YouTube."""
         browser = self.browser.lower() if self.browser else None
+        platform = self.detect_platform(url)
         safe_title = (Path(ydl_opts.get('outtmpl', '')).name.replace('%(ext)s', '').rstrip('.') or 'video')
 
         progress_callback = None
@@ -235,9 +260,10 @@ class BilibiliDownloader:
                 except Exception:
                     progress_callback = None
 
-        cmd = [
-            "yt-dlp",
+        base_cmd = [
+            sys.executable, "-m", "yt_dlp",
             "--no-playlist",
+            "--no-colors",
             "--format", "bestvideo+bestaudio/best",
             "--merge-output-format", "mp4",
             "--write-sub",
@@ -248,48 +274,92 @@ class BilibiliDownloader:
             "--output", f"{safe_title}.%(ext)s",
             "--progress"
         ]
-        if browser:
-            cmd.extend(["--cookies-from-browser", browser])
-        cmd.append(url)
 
-        logger.info("[yt-dlp] Iniciando download da plataforma: %s", self.detect_platform(url))
+        attempts = []
 
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            cwd=str(self.download_dir),
-            bufsize=1,
-            universal_newlines=True
+        if platform == "youtube":
+            # Vídeos públicos: tenta primeiro sem cookies. Isso evita o bug
+            # atual do cliente autenticado tv_downgraded do YouTube.
+            attempts.append(("sem cookies", list(base_cmd)))
+
+            if browser:
+                with_cookies = list(base_cmd)
+                with_cookies.extend([
+                    "--cookies-from-browser", browser,
+                    "--extractor-args", "youtube:player_client=default,web_embedded"
+                ])
+                attempts.append((f"com cookies de {browser}", with_cookies))
+        else:
+            cmd = list(base_cmd)
+            if browser:
+                cmd.extend(["--cookies-from-browser", browser])
+            attempts.append(("padrão", cmd))
+
+        def run_attempt(label: str, cmd: list):
+            full_cmd = cmd + [url]
+            logger.info("[yt-dlp] Tentativa %s (%s)", label, platform)
+
+            process = subprocess.Popen(
+                full_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                cwd=str(self.download_dir),
+                bufsize=1,
+                universal_newlines=True
+            )
+
+            progress_pattern = re.compile(r'\[download\]\s+(\d+\.?\d*)%')
+            output_lines = []
+
+            while True:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    line = self._clean_error_text(output.strip())
+                    output_lines.append(line)
+                    logger.info("[yt-dlp] %s", line)
+                    if progress_callback:
+                        match = progress_pattern.search(line)
+                        if match:
+                            try:
+                                progress = float(match.group(1))
+                                progress_callback(f"Baixando... {progress:.1f}%", progress)
+                            except ValueError:
+                                pass
+
+            result = process.poll()
+            return result, output_lines
+
+        last_output = []
+        last_code = 1
+
+        for label, cmd in attempts:
+            code, output_lines = run_attempt(label, cmd)
+            last_code = code
+            last_output = output_lines
+
+            if code == 0:
+                logger.info("[yt-dlp] Download concluído. Arquivos: %s", os.listdir(self.download_dir))
+                return
+
+            logger.warning("[yt-dlp] Tentativa '%s' falhou com código %s", label, code)
+
+        tail = " ".join(last_output[-8:])
+        tail = self._clean_error_text(tail)
+
+        if "The page needs to be reloaded" in tail:
+            raise ProcessingError(
+                "O YouTube recusou a extração nesta tentativa. "
+                "Atualize o yt-dlp e tente novamente. "
+                "Se o vídeo exigir login, abra o YouTube no navegador configurado, "
+                "recarregue a página do vídeo e tente novamente."
+            )
+
+        raise ProcessingError(
+            f"yt-dlp encerrou com código {last_code}. {tail or 'Nenhum detalhe adicional foi retornado.'}"
         )
-
-        progress_pattern = re.compile(r'\[download\]\s+(\d+\.?\d*)%')
-        output_lines = []
-
-        while True:
-            output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
-                break
-            if output:
-                line = output.strip()
-                output_lines.append(line)
-                logger.info("[yt-dlp] %s", line)
-                if progress_callback:
-                    match = progress_pattern.search(output)
-                    if match:
-                        try:
-                            progress = float(match.group(1))
-                            progress_callback(f"Baixando... {progress:.1f}%", progress)
-                        except ValueError:
-                            pass
-
-        result = process.poll()
-        if result != 0:
-            tail = "\n".join(output_lines[-12:])
-            raise ProcessingError(f"yt-dlp encerrou com código {result}. {tail}")
-
-        logger.info("[yt-dlp] Download concluído. Arquivos: %s", os.listdir(self.download_dir))
 
     def _create_progress_hook(self, progress_callback: Callable[[str, float], None]):
         """创建进度回调钩子"""

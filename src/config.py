@@ -24,50 +24,50 @@ class VideoCategory(str, Enum):
 # 视频分类配置
 VIDEO_CATEGORIES_CONFIG = {
     VideoCategory.DEFAULT: {
-        "name": "默认",
-        "description": "通用视频内容，适用于大部分场景",
+        "name": "Padrão",
+        "description": "Conteúdo geral de vídeo, adequado para a maioria dos casos",
         "icon": "🎬",
         "color": "#4facfe"
     },
     VideoCategory.KNOWLEDGE: {
-        "name": "知识科普",
-        "description": "教育、科普、技术分享等知识性内容",
+        "name": "Educação e conhecimento",
+        "description": "Conteúdo educativo, explicativo, técnico e de divulgação de conhecimento",
         "icon": "📚",
         "color": "#52c41a"
     },
     VideoCategory.BUSINESS: {
-        "name": "商业财经",
-        "description": "商业分析、财经资讯、投资理财等",
+        "name": "Negócios e finanças",
+        "description": "Análises de negócios, finanças, investimentos e mercado",
         "icon": "💼",
         "color": "#faad14"
     },
     VideoCategory.OPINION: {
-        "name": "观点评论",
-        "description": "观点表达、评论分析、思辨讨论等",
+        "name": "Opinião e comentários",
+        "description": "Opiniões, análises, comentários e discussões",
         "icon": "💭",
         "color": "#722ed1"
     },
     VideoCategory.EXPERIENCE: {
-        "name": "经验分享",
-        "description": "生活经验、技能分享、实用技巧等",
+        "name": "Experiências e dicas",
+        "description": "Experiências pessoais, habilidades, dicas e conteúdo prático",
         "icon": "🌟",
         "color": "#13c2c2"
     },
     VideoCategory.SPEECH: {
-        "name": "演讲脱口秀",
-        "description": "演讲、脱口秀、访谈等口语表达内容",
+        "name": "Entrevistas e apresentações",
+        "description": "Entrevistas, palestras, apresentações e conteúdo falado",
         "icon": "🎤",
         "color": "#eb2f96"
     },
     VideoCategory.CONTENT_REVIEW: {
-        "name": "内容解说",
-        "description": "影视解说、游戏解说、作品分析等",
+        "name": "Análises e explicações",
+        "description": "Análises de filmes, séries, jogos, obras e outros conteúdos",
         "icon": "🎭",
         "color": "#f5222d"
     },
     VideoCategory.ENTERTAINMENT: {
-        "name": "娱乐内容",
-        "description": "娱乐节目、综艺、表演等轻松内容",
+        "name": "Entretenimento",
+        "description": "Programas, performances e outros conteúdos de entretenimento",
         "icon": "🎪",
         "color": "#fa8c16"
     }
