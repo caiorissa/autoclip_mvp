@@ -48,7 +48,7 @@ const ProjectStatusIndicator: React.FC<ProjectStatusIndicatorProps> = ({
         return {
           color: '#ff4d4f',
           icon: <ExclamationCircleOutlined />,
-          text: '处理Falha',
+          text: 'Falha no processamento',
           badgeStatus: 'error' as const
         }
       default:
