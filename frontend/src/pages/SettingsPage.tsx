@@ -192,10 +192,10 @@ const SettingsPage: React.FC = () => {
               label="Provedor de API"
               name="api_provider"
               className="form-item"
-              rules={[{ required: true, message: '请选择Provedor de API' }]}
+              rules={[{ required: true, message: 'Selecione um provedor de API' }]}
             >
               <Select 
-                placeholder="请选择Provedor de API" 
+                placeholder="Selecione um provedor de API" 
                 className="settings-input"
                 onChange={handleProviderChange}
                 value={selectedProvider}
@@ -429,7 +429,7 @@ const SettingsPage: React.FC = () => {
               }}>
                 <Spin size="small" />
                 <Text style={{ color: '#4facfe', fontSize: '14px' }}>
-                  正在Detecta navegadores disponíveis...
+                  Detectando navegadores disponíveis...
                 </Text>
               </div>
             ) : (
@@ -527,7 +527,7 @@ const SettingsPage: React.FC = () => {
                 <InfoCircleOutlined /> 2. Entender os parâmetros
               </Title>
               <Paragraph className="instruction-text">
-                • <Text strong>Tamanho dos blocos de texto</Text>：影响处理速度和精度，建议5000caracteres<br />
+                • <Text strong>Tamanho dos blocos de texto</Text>: afeta velocidade e precisão; recomendamos 5000 caracteres<br />
                 • <Text strong>Pontuação mínima</Text>: somente clipes acima desse valor serão mantidos<br />
                 • <Text strong>Clipes por coleção</Text>: controla quantos clipes cada coleção temática pode conter
               </Paragraph>
