@@ -67,7 +67,7 @@ class LLMFactory:
             )
     
     @staticmethod
-    def get_default_client() -> LLMClient | SiliconFlowClient | OpenRouterClient:
+    def get_default_client() -> Union[LLMClient, SiliconFlowClient, OpenRouterClient]:
         """
         获取默认的LLM客户端
         
