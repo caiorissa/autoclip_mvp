@@ -166,7 +166,7 @@ class BilibiliDownloader:
             'writesubtitles': True,
             'subtitleslangs': ['pt-BR', 'pt', 'en', 'en-US', 'zh-Hans', 'zh-CN', 'zh', 'ai-zh'],
             'subtitlesformat': 'srt/vtt/best',
-            'convertsubtitles': 'srt'
+            'convertsubtitles': 'srt',
             'outtmpl': str(self.download_dir / f'{safe_title}.%(ext)s'),
             'noplaylist': True,
             'quiet': True,
@@ -224,7 +224,7 @@ class BilibiliDownloader:
     def _download_sync(self, url: str, ydl_opts: Dict[str, Any]):
         """Baixa vídeo e legendas via yt-dlp, com suporte a YouTube e Bilibili."""
         browser = self.browser.lower() if self.browser else None
-        safe_title = Path(ydl_opts.get('outtmpl', '')).name.replace('%(ext)s', '') or 'video'
+        safe_title = (Path(ydl_opts.get('outtmpl', '')).name.replace('%(ext)s', '').rstrip('.') or 'video')
 
         progress_callback = None
         if ydl_opts.get('progress_hooks'):
@@ -242,7 +242,7 @@ class BilibiliDownloader:
             "--merge-output-format", "mp4",
             "--write-sub",
             "--write-auto-sub",
-            "--sub-langs", "pt-BR,pt.*,en.*,zh.*,ai-zh",
+            "--sub-langs", "pt-BR,pt.*,en.*,.*-orig,zh.*,ai-zh",
             "--sub-format", "srt/vtt/best",
             "--convert-subs", "srt",
             "--output", f"{safe_title}.%(ext)s",
