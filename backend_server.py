@@ -28,7 +28,7 @@ import sys
 sys.path.append(str(Path(__file__).parent))
 
 from src.main import AutoClipsProcessor
-from src.config import OUTPUT_DIR, CLIPS_DIR, COLLECTIONS_DIR, METADATA_DIR, DASHSCOPE_API_KEY, VideoCategory, VIDEO_CATEGORIES_CONFIG
+from src.config import OUTPUT_DIR, CLIPS_DIR, COLLECTIONS_DIR, METADATA_DIR, DASHSCOPE_API_KEY, VideoCategory, VIDEO_CATEGORIES_CONFIG, config_manager
 # from src.upload.upload_manager import UploadManager, Platform, UploadStatus  # 已移除bilitool相关功能
 from src.utils.bilibili_downloader import BilibiliDownloader, BilibiliVideoInfo, download_bilibili_video, get_bilibili_video_info
 
@@ -92,7 +92,7 @@ class ApiSettings(BaseModel):
     dashscope_api_key: str = ""
     siliconflow_api_key: str = ""
     openrouter_api_key: str = ""
-    api_provider: str = "dashscope"
+    api_provider: str = "openrouter"
     model_name: str = "qwen-plus"
     siliconflow_model: str = "Qwen/Qwen2.5-72B-Instruct"
     openrouter_model: str = "qwen/qwen3.8-27b:free"
@@ -1731,18 +1731,19 @@ async def update_settings(settings: ApiSettings):
         settings_file = Path("./data/settings.json")
         settings_file.parent.mkdir(exist_ok=True)
         
-        with open(settings_file, 'w', encoding='utf-8') as f:
-            json.dump(settings.dict(), f, ensure_ascii=False, indent=2)
-        
-        # 更新环境变量
+        # Atualiza o ConfigManager em memória e persiste o arquivo.
+        config_manager.update_settings(**settings.dict())
+
+        # Mantém as variáveis de ambiente sincronizadas para clientes que as consultam.
         os.environ["DASHSCOPE_API_KEY"] = settings.dashscope_api_key
         os.environ["SILICONFLOW_API_KEY"] = settings.siliconflow_api_key
         os.environ["OPENROUTER_API_KEY"] = settings.openrouter_api_key
         os.environ["API_PROVIDER"] = settings.api_provider
+        os.environ["MODEL_NAME"] = settings.model_name
         os.environ["SILICONFLOW_MODEL"] = settings.siliconflow_model
         os.environ["OPENROUTER_MODEL"] = settings.openrouter_model
-        
-        return {"message": "配置更新成功"}
+
+        return {"message": "Configuração atualizada com sucesso"}
     except Exception as e:
         logger.error(f"更新设置失败: {e}")
         raise HTTPException(status_code=500, detail="更新设置失败")
