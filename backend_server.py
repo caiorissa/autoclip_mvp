@@ -872,7 +872,11 @@ async def process_bilibili_download_task(
         logger.info(f"Download por link concluído: {task_id}, projeto: {project_id}")
         
     except Exception as e:
-        error_msg = f"下载失败: {str(e)}"
+        detail = getattr(e, "message", None) or str(e)
+        if detail.lower().startswith("falha no download"):
+            error_msg = detail
+        else:
+            error_msg = f"Falha no download: {detail}"
         logger.error(f"Download por link falhou {task_id}: {error_msg}")
         
         # 更新任务状态为失败
