@@ -362,7 +362,7 @@ export const projectApi = {
       
       return response.data
     } catch (error) {
-      console.error('打包Falha no download:', error)
+      console.error('Falha ao baixar o pacote:', error)
       throw error
     }
   },
