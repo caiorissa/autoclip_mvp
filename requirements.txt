@@ -22,7 +22,7 @@ aiohttp==3.12.13
 cryptography==42.0.5
 
 # B站相关工具
-yt-dlp>=2023.12.30
+yt-dlp>=2026.8.19
 
 # 测试依赖
 pytest==8.0.0
