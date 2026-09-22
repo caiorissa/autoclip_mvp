@@ -1,4 +1,4 @@
-/* 创建合集弹窗样式 */
+/* Estilo do modal de criação de coleção */
 .create-collection-modal .ant-modal-content {
   background: #1a1a1a !important;
   border: 1px solid #2d2d2d !important;
@@ -29,14 +29,14 @@
   border-radius: 8px !important;
 }
 
-/* 弹窗内容 */
+/* Conteúdo do modal */
 .modal-content {
   padding: 32px;
   background: #1a1a1a;
   color: #ffffff;
 }
 
-/* 头部样式 */
+/* Estilo do cabeçalho */
 .modal-header {
   display: flex;
   align-items: center;
@@ -79,7 +79,7 @@
   margin: 0 0 32px 0 !important;
 }
 
-/* 表单区域 */
+/* Área do formulário */
 .form-section {
   display: flex;
   flex-direction: column;
@@ -116,7 +116,7 @@
   margin-left: auto;
 }
 
-/* 表单控件样式 */
+/* Estilo dos controles do formulário */
 .form-input {
   background: #262626 !important;
   border: 1px solid #404040 !important;
@@ -160,7 +160,7 @@
   color: #666666 !important;
 }
 
-/* 批量操作 */
+/* Ações em lote */
 .batch-actions {
   display: flex;
   gap: 8px;
@@ -178,7 +178,7 @@
   color: #00a8ff !important;
 }
 
-/* 片段容器 */
+/* Contêiner de clipes */
 .clips-container {
   max-height: 300px;
   overflow-y: auto;
@@ -205,7 +205,7 @@
   background: #555555;
 }
 
-/* 片段项 */
+/* Item de clipe */
 .clip-item {
   display: flex;
   align-items: center;
@@ -275,7 +275,7 @@
   font-weight: 500;
 }
 
-/* 底部操作 */
+/* Ações inferiores */
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -325,7 +325,7 @@
   cursor: not-allowed !important;
 }
 
-/* 响应式设计 */
+/* Design responsivo */
 @media (max-width: 768px) {
   .create-collection-modal .ant-modal {
     margin: 16px !important;
