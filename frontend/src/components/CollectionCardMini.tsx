@@ -21,7 +21,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
   onDelete
 }) => {
   const [isHovered, setIsHovered] = useState(false)
-  // 按照collection.clip_ids的顺序排列clips
+  // Ordena os clipes conforme collection.clip_ids
   const collectionClips = collection.clip_ids.map(clipId => clips.find(clip => clip.id === clipId)).filter(Boolean) as Clip[]
   
   const totalDuration = collectionClips.reduce((total, clip) => {
@@ -38,7 +38,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
     return `${mins}:${String(secs).padStart(2, '0')}`
   }
 
-  // Remover评分计算
+  // Remove o cálculo de pontuação
 
   return (
 
@@ -69,7 +69,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
         flexDirection: 'column',
         justifyContent: 'space-between'
       }}>
-        {/* 头部区域 */}
+        {/* Área do cabeçalho */}
         <div>
           <div style={{ 
             display: 'flex', 
@@ -116,7 +116,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
             </span>
           </div>
           
-          {/* 简介 */}
+          {/* Descrição */}
           <Text 
             type="secondary" 
             style={{ 
@@ -134,7 +134,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
           </Text>
         </div>
 
-        {/* 底部统计信息 */}
+        {/* Estatísticas inferiores */}
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between',
@@ -174,7 +174,7 @@ const CollectionCardMini: React.FC<CollectionCardMiniProps> = ({
                 e?.stopPropagation()
                 onDelete(collection.id)
               }}
-              okText="确认"
+              okText="Confirmar"
               cancelText="Cancelar"
               okType="danger"
             >
