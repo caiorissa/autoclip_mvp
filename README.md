@@ -31,7 +31,7 @@
 ### Requirements
 
 #### Development Environment
-- Python 3.8+
+- Python 3.11+ (recomendado; o yt-dlp atual exige Python 3.10+)
 - Node.js 16+
 - DashScope API Key or SiliconFlow API Key (for AI analysis)
 
@@ -74,7 +74,7 @@ cd autoclip_mvp
 2. **Install backend dependencies**
 ```bash
 # Create virtual environment
-python3 -m venv venv
+python3.11 -m venv venv
 source venv/bin/activate  # Linux/Mac
 # or venv\Scripts\activate  # Windows
 
