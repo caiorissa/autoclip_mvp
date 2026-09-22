@@ -235,7 +235,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
 
             {/* etapas列表 */}
             <div>
-              <Text strong style={{ marginBottom: '16px', display: 'block' }}>处理etapas</Text>
+              <Text strong style={{ marginBottom: '16px', display: 'block' }}>Etapas do processamento</Text>
               <Steps
                 direction="vertical"
                 size="small"
@@ -258,7 +258,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
             {status.status === 'completed' && (
               <Alert
                 message="Processamento concluído"
-                description="视频已成功处理，您可以查看生成的片段和Coleções。"
+                description="Vídeo processado com sucesso. Você já pode ver os clipes e coleções gerados."
                 type="success"
                 showIcon
               />
