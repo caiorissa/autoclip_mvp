@@ -37,14 +37,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
   // 获取分类信息
   const getCategoryInfo = (category?: string) => {
     const categoryMap: Record<string, { name: string; icon: string; color: string }> = {
-      'default': { name: '默认', icon: '🎬', color: '#4facfe' },
-      'knowledge': { name: '知识科普', icon: '📚', color: '#52c41a' },
-      'business': { name: '商业财经', icon: '💼', color: '#faad14' },
-      'opinion': { name: '观点评论', icon: '💭', color: '#722ed1' },
-      'experience': { name: '经验分享', icon: '🌟', color: '#13c2c2' },
-      'speech': { name: '演讲脱口秀', icon: '🎤', color: '#eb2f96' },
-      'content_review': { name: '内容解说', icon: '🎭', color: '#f5222d' },
-      'entertainment': { name: '娱乐内容', icon: '🎪', color: '#fa8c16' }
+      'default': { name: 'Padrão', icon: '🎬', color: '#4facfe' },
+      'knowledge': { name: 'Conhecimento', icon: '📚', color: '#52c41a' },
+      'business': { name: 'Negócios e finanças', icon: '💼', color: '#faad14' },
+      'opinion': { name: 'Opinião e comentários', icon: '💭', color: '#722ed1' },
+      'experience': { name: 'Experiências e dicas', icon: '🌟', color: '#13c2c2' },
+      'speech': { name: 'Palestras e entrevistas', icon: '🎤', color: '#eb2f96' },
+      'content_review': { name: 'Análise de conteúdo', icon: '🎭', color: '#f5222d' },
+      'entertainment': { name: 'Entretenimento', icon: '🎪', color: '#fa8c16' }
     }
     return categoryMap[category || 'default'] || categoryMap['default']
   }
@@ -83,7 +83,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             const ctx = canvas.getContext('2d')
             if (!ctx) return
             
-            // 设置合适的缩略图尺寸
+            // Configurações合适的缩略图尺寸
             const maxWidth = 320
             const maxHeight = 180
             const aspectRatio = video.videoWidth / video.videoHeight
@@ -116,14 +116,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
               }
             }
           } catch (error) {
-            console.error('生成缩略图失败:', error)
+            console.error('生成缩略图Falha:', error)
           } finally {
             setThumbnailLoading(false)
           }
         }
         
         video.onerror = (error) => {
-          console.error('视频加载失败:', error)
+          console.error('视频加载Falha:', error)
           setThumbnailLoading(false)
         }
         
@@ -137,7 +137,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
     generateThumbnail()
   }, [project.id, project.video_path, thumbnailCacheKey])
 
-  // 获取项目日志（仅在处理中时）
+  // 获取项目日志（仅在Processando时）
   useEffect(() => {
     if (project.status !== 'processing') {
       setLogs([])
@@ -155,7 +155,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
           log.level === 'ERROR'
         ))
       } catch (error) {
-        console.error('获取日志失败:', error)
+        console.error('获取日志Falha:', error)
       }
     }
 
@@ -189,13 +189,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
     setIsRetrying(true)
     try {
       await projectApi.retryProcessing(project.id)
-      message.success('已开始重试处理项目')
+      message.success('Nova tentativa de processamento iniciada')
       if (onRetry) {
         onRetry(project.id)
       }
     } catch (error) {
-      console.error('重试失败:', error)
-      message.error('重试失败，请稍后再试')
+      console.error('重试Falha:', error)
+      message.error('Falha ao tentar novamente. Tente mais tarde.')
     } finally {
       setIsRetrying(false)
     }
@@ -269,12 +269,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                 fontSize: '12px',
                 fontWeight: 500
               }}>
-                生成封面中...
+                Gerando capa...
               </div>
             </div>
           )}
           
-          {/* 无缩略图时的默认显示 */}
+          {/* 无缩略图时的Padrão显示 */}
           {!videoThumbnail && !thumbnailLoading && (
             <div style={{ textAlign: 'center' }}>
               <PlayCircleOutlined 
@@ -290,7 +290,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                 fontSize: '12px',
                 fontWeight: 500
               }}>
-                点击预览
+                Clique para visualizar
               </div>
             </div>
           )}
@@ -353,7 +353,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                 transition: 'opacity 0.3s ease'
               }}
             >
-              {/* 失败状态：只显示重试和删除按钮 */}
+              {/* Falha状态：只显示重试和删除按钮 */}
               {project.status === 'error' ? (
                 <>
                   <Button
@@ -378,8 +378,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                   />
                   
                   <Popconfirm
-                    title="确定要删除这个项目吗？"
-                    description="删除后无法恢复"
+                    title="Tem certeza de que deseja excluir este projeto?"
+                    description="Esta ação não pode ser desfeita"
                     onConfirm={(e) => {
                       e?.stopPropagation()
                       onDelete(project.id)
@@ -387,8 +387,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                     onCancel={(e) => {
                       e?.stopPropagation()
                     }}
-                    okText="确定"
-                    cancelText="取消"
+                    okText="Confirmar"
+                    cancelText="Cancelar"
                   >
                     <Button
                       type="text"
@@ -416,21 +416,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                   <Space size={4}>
                     {/* 下载按钮 - 仅在完成状态显示 */}
                     {project.status === 'completed' && (
-                      <Tooltip title="打包下载所有文件" placement="top">
+                      <Tooltip title="Baixar todos os arquivos em ZIP" placement="top">
                         <Button
                           type="text"
                           icon={<DownloadOutlined />}
                           onClick={async (e) => {
                             e.stopPropagation()
                             try {
-                              message.loading('正在打包下载...', 0)
+                              message.loading('Preparando download...', 0)
                               await projectApi.downloadProjectAll(project.id)
                               message.destroy()
-                              message.success('下载完成！')
+                              message.success('Download concluído!')
                             } catch (error) {
                               message.destroy()
-                              console.error('下载失败:', error)
-                              message.error('下载失败，请稍后再试')
+                              console.error('下载Falha:', error)
+                              message.error('Falha no download. Tente novamente mais tarde.')
                             }
                           }}
                           style={{
@@ -450,8 +450,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                     
                     {/* 删除按钮 */}
                     <Popconfirm
-                      title="确定要删除这个项目吗？"
-                      description="删除后无法恢复"
+                      title="Tem certeza de que deseja excluir este projeto?"
+                      description="Esta ação não pode ser desfeita"
                       onConfirm={(e) => {
                         e?.stopPropagation()
                         onDelete(project.id)
@@ -459,8 +459,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                       onCancel={(e) => {
                         e?.stopPropagation()
                       }}
-                      okText="确定"
-                      cancelText="取消"
+                      okText="Confirmar"
+                      cancelText="Cancelar"
                     >
                       <Button
                         type="text"
@@ -491,7 +491,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
     >
       <div style={{ padding: '0', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
-          {/* 仅在处理中时显示实时日志 */}
+          {/* 仅在Processando时显示实时日志 */}
           {project.status === 'processing' && logs.length > 0 && (
             <div style={{ marginBottom: '8px' }}>
                 <div style={{
@@ -515,7 +515,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {logs[currentLogIndex]?.message || '正在处理...'}
+                      {logs[currentLogIndex]?.message || 'Processando...'}
                     </Text>
                     <Text style={{ 
                       fontSize: '9px', 
@@ -612,15 +612,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                 }
               </div>
               <div style={{ color: '#999999', fontSize: '9px', lineHeight: '10px' }}>
-                {project.status === 'completed' ? '已完成' :
-                 project.status === 'processing' ? '处理中' :
-                 project.status === 'error' ? '失败' :
-                 '等待中'
+                {project.status === 'completed' ? 'Concluído' :
+                 project.status === 'processing' ? 'Processando' :
+                 project.status === 'error' ? 'Falha' :
+                 'Aguardando'
                 }
               </div>
             </div>
             
-            {/* 切片数量 */}
+            {/* Clipes数量 */}
             <div style={{
               background: 'rgba(102, 126, 234, 0.15)',
               border: '1px solid rgba(102, 126, 234, 0.3)',
@@ -633,11 +633,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                 {project.clips?.length || 0}
               </div>
               <div style={{ color: '#999999', fontSize: '9px', lineHeight: '10px' }}>
-                切片
+                Clipes
               </div>
             </div>
             
-            {/* 合集数量 */}
+            {/* Coleções数量 */}
             <div style={{
               background: 'rgba(118, 75, 162, 0.15)',
               border: '1px solid rgba(118, 75, 162, 0.3)',
@@ -650,7 +650,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                 {project.collections?.length || 0}
               </div>
               <div style={{ color: '#999999', fontSize: '9px', lineHeight: '10px' }}>
-                合集
+                Coleções
               </div>
             </div>
           </div>
