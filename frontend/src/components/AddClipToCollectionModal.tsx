@@ -25,12 +25,12 @@ const AddClipToCollectionModal: React.FC<AddClipToCollectionModalProps> = ({
   const [selectedClipIds, setSelectedClipIds] = useState<string[]>([])
   const [searchText, setSearchText] = useState('')
 
-  // 过滤出不在当前合集中的切片
+  // Filtra os clipes que ainda não estão na coleção atual
   const availableClips = useMemo(() => {
     return clips.filter(clip => !existingClipIds.includes(clip.id))
   }, [clips, existingClipIds])
 
-  // 根据搜索文本过滤切片
+  // Filtra os clipes pelo texto da busca
   const filteredClips = useMemo(() => {
     if (!searchText.trim()) {
       return availableClips
@@ -111,7 +111,7 @@ const AddClipToCollectionModal: React.FC<AddClipToCollectionModalProps> = ({
       ]}
     >
       <div className="add-clip-modal-content">
-        {/* 搜索和操作栏 */}
+        {/* Barra de busca e ações */}
         <div className="search-section">
           <Search
             placeholder="Buscar por título, conteúdo ou motivo da recomendação..."
@@ -140,7 +140,7 @@ const AddClipToCollectionModal: React.FC<AddClipToCollectionModalProps> = ({
           </div>
         </div>
 
-        {/* 切片列表 */}
+        {/* Lista de clipes */}
         <div className="clips-list-container">
           {filteredClips.length > 0 ? (
             <List
