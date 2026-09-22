@@ -43,8 +43,8 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
     { title: 'Localização temporal', description: 'Localiza os intervalos de cada tópico com base nas legendas SRT' },
     { title: 'Avaliação do conteúdo', description: 'Avalia a qualidade e o potencial de engajamento de cada clipe' },
     { title: 'Geração de títulos', description: 'Gera títulos atraentes para os clipes com melhor avaliação' },
-    { title: 'Agrupamento por tema', description: '将相关片段聚合为Coleções推荐' },
-    { title: 'Corte do vídeo', description: '使用FFmpeg生成Clipes与Coleções视频' }
+    { title: 'Agrupamento por tema', description: 'Agrupa clipes relacionados em coleções recomendadas' },
+    { title: 'Corte do vídeo', description: 'Usa FFmpeg para gerar clipes e vídeos de coleções' }
   ]
 
   useEffect(() => {
@@ -214,7 +214,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 {getStepIcon(status.current_step)}
-                <Text strong>当前etapas: {status.step_name}</Text>
+                <Text strong>Etapa atual: {status.step_name}</Text>
               </div>
               <Progress 
                 percent={status.progress}
@@ -226,7 +226,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
             {/* 错误信息 */}
             {status.status === 'error' && status.error_message && (
               <Alert
-                message="处理Falha"
+                message="Falha no processamento"
                 description={status.error_message}
                 type="error"
                 showIcon

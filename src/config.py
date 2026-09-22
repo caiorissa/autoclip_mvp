@@ -122,10 +122,12 @@ for dir_path in [CLIPS_DIR, COLLECTIONS_DIR, METADATA_DIR]:
 class Settings(BaseModel):
     """系统设置"""
     dashscope_api_key: Optional[str] = ""
-    siliconflow_api_key: Optional[str] = ""  # 新增硅基流动API密钥
-    api_provider: str = "dashscope"  # 新增API提供商选择：dashscope 或 siliconflow
+    siliconflow_api_key: Optional[str] = ""
+    openrouter_api_key: Optional[str] = ""
+    api_provider: str = "openrouter"
     model_name: str = "qwen-plus"
-    siliconflow_model: str = "Qwen/Qwen2.5-72B-Instruct"  # 新增硅基流动模型名称
+    siliconflow_model: str = "Qwen/Qwen2.5-72B-Instruct"
+    openrouter_model: str = "qwen/qwen3.8-27b:free"
     chunk_size: int = 5000
     min_score_threshold: float = 0.7
     max_clips_per_collection: int = 5
@@ -150,9 +152,11 @@ class Settings(BaseModel):
         env_mappings = {
             'dashscope_api_key': 'DASHSCOPE_API_KEY',
             'siliconflow_api_key': 'SILICONFLOW_API_KEY',
+            'openrouter_api_key': 'OPENROUTER_API_KEY',
             'api_provider': 'API_PROVIDER',
             'model_name': 'MODEL_NAME',
             'siliconflow_model': 'SILICONFLOW_MODEL',
+            'openrouter_model': 'OPENROUTER_MODEL',
             'chunk_size': 'CHUNK_SIZE',
             'min_score_threshold': 'MIN_SCORE_THRESHOLD'
         }
@@ -188,13 +192,16 @@ class Settings(BaseModel):
 @dataclass
 class APIConfig:
     """API配置"""
-    provider: str = "dashscope"  # dashscope 或 siliconflow
+    provider: str = "openrouter"
     model_name: str = "qwen-plus"
     siliconflow_model: str = "Qwen/Qwen2.5-72B-Instruct"
+    openrouter_model: str = "qwen/qwen3.8-27b:free"
     api_key: Optional[str] = None
     siliconflow_api_key: Optional[str] = None
+    openrouter_api_key: Optional[str] = None
     base_url: str = "https://dashscope.aliyuncs.com"
     siliconflow_base_url: str = "https://api.siliconflow.cn/v1"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
     max_tokens: int = 4096
 
 @dataclass
@@ -241,10 +248,14 @@ class ConfigManager:
             self.settings.dashscope_api_key = os.getenv("DASHSCOPE_API_KEY")
         if os.getenv("SILICONFLOW_API_KEY"):
             self.settings.siliconflow_api_key = os.getenv("SILICONFLOW_API_KEY")
+        if os.getenv("OPENROUTER_API_KEY"):
+            self.settings.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
         if os.getenv("API_PROVIDER"):
             self.settings.api_provider = os.getenv("API_PROVIDER")
         if os.getenv("SILICONFLOW_MODEL"):
             self.settings.siliconflow_model = os.getenv("SILICONFLOW_MODEL")
+        if os.getenv("OPENROUTER_MODEL"):
+            self.settings.openrouter_model = os.getenv("OPENROUTER_MODEL")
         
         # 从配置文件加载
         config_file = PROJECT_ROOT / "data" / "settings.json"
@@ -289,8 +300,10 @@ class ConfigManager:
             provider=self.settings.api_provider,
             model_name=self.settings.model_name,
             siliconflow_model=self.settings.siliconflow_model,
+            openrouter_model=self.settings.openrouter_model,
             api_key=self.settings.dashscope_api_key,
-            siliconflow_api_key=self.settings.siliconflow_api_key
+            siliconflow_api_key=self.settings.siliconflow_api_key,
+            openrouter_api_key=self.settings.openrouter_api_key
         )
     
     def get_processing_config(self) -> ProcessingConfig:
@@ -350,6 +363,9 @@ class ConfigManager:
         elif provider == "siliconflow":
             self.settings.siliconflow_api_key = api_key
             os.environ["SILICONFLOW_API_KEY"] = api_key
+        elif provider == "openrouter":
+            self.settings.openrouter_api_key = api_key
+            os.environ["OPENROUTER_API_KEY"] = api_key
         
         # 保存到配置文件
         self._save_settings()
@@ -380,8 +396,10 @@ class ConfigManager:
                 "provider": self.settings.api_provider,
                 "model_name": self.settings.model_name,
                 "siliconflow_model": self.settings.siliconflow_model,
+                "openrouter_model": self.settings.openrouter_model,
                 "dashscope_api_key": self.settings.dashscope_api_key[:8] + "..." if self.settings.dashscope_api_key else None,
-                "siliconflow_api_key": self.settings.siliconflow_api_key[:8] + "..." if self.settings.siliconflow_api_key else None
+                "siliconflow_api_key": self.settings.siliconflow_api_key[:8] + "..." if self.settings.siliconflow_api_key else None,
+                "openrouter_api_key": self.settings.openrouter_api_key[:8] + "..." if self.settings.openrouter_api_key else None
             },
             "processing_config": {
                 "chunk_size": self.settings.chunk_size,

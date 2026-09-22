@@ -17,9 +17,11 @@ interface BrowserInfo {
 interface ApiSettings {
   dashscope_api_key: string
   siliconflow_api_key: string
+  openrouter_api_key: string
   api_provider: string
   model_name: string
   siliconflow_model: string
+  openrouter_model: string
   chunk_size: number
   min_score_threshold: number
   max_clips_per_collection: number
@@ -32,7 +34,7 @@ const SettingsPage: React.FC = () => {
   const [availableBrowsers, setAvailableBrowsers] = useState<BrowserInfo[]>([])
   const [detectingBrowsers, setDetectingBrowsers] = useState(false)
   const [selectedBrowser, setSelectedBrowser] = useState<string>('')
-  const [selectedProvider, setSelectedProvider] = useState<string>('dashscope')
+  const [selectedProvider, setSelectedProvider] = useState<string>('openrouter')
 
   useEffect(() => {
     loadSettings()
@@ -123,10 +125,13 @@ const SettingsPage: React.FC = () => {
     } else if (provider === 'siliconflow') {
       apiKey = values.siliconflow_api_key
       model = values.siliconflow_model
+    } else if (provider === 'openrouter') {
+      apiKey = values.openrouter_api_key
+      model = values.openrouter_model
     }
     
     if (!apiKey) {
-      message.error('请先输入API密钥')
+      message.error('Digite a chave da API primeiro')
       return
     }
     
@@ -134,12 +139,12 @@ const SettingsPage: React.FC = () => {
     try {
       const result = await settingsApi.testApiKey(apiKey, provider, model)
       if (result.success) {
-        message.success('API连接测试成功')
+        message.success('Conexão com a API realizada com sucesso')
       } else {
-        message.error(`API连接测试失败: ${result.error}`)
+        message.error(`Falha ao testar a API: ${result.error}`)
       }
     } catch (error) {
-      message.error('API连接测试失败')
+      message.error('Falha ao testar a conexão com a API')
       console.error('Test API error:', error)
     } finally {
       setLoading(false)
@@ -173,9 +178,10 @@ const SettingsPage: React.FC = () => {
             onFinish={handleSave}
             className="settings-form"
             initialValues={{
-              api_provider: 'dashscope',
+              api_provider: 'openrouter',
               model_name: 'qwen-plus',
               siliconflow_model: 'Qwen/Qwen2.5-72B-Instruct',
+              openrouter_model: 'qwen/qwen3.8-27b:free',
               chunk_size: 5000,
               min_score_threshold: 0.7,
               max_clips_per_collection: 5
@@ -194,8 +200,9 @@ const SettingsPage: React.FC = () => {
                 onChange={handleProviderChange}
                 value={selectedProvider}
               >
-                <Select.Option value="dashscope">阿里云 (DashScope)</Select.Option>
-                <Select.Option value="siliconflow">硅基流动 (SiliconFlow)</Select.Option>
+                <Select.Option value="openrouter">OpenRouter (recomendado)</Select.Option>
+                <Select.Option value="dashscope">Alibaba Cloud (DashScope)</Select.Option>
+                <Select.Option value="siliconflow">SiliconFlow</Select.Option>
               </Select>
             </Form.Item>
 
@@ -262,6 +269,53 @@ const SettingsPage: React.FC = () => {
                     <Select.Option value="Qwen/Qwen2.5-72B-Instruct">Qwen2.5-72B-Instruct</Select.Option>
                     <Select.Option value="Qwen/Qwen3-8B">Qwen3-8B</Select.Option>
                     <Select.Option value="Pro/deepseek-ai/DeepSeek-R1">DeepSeek-R1</Select.Option>
+                  </Select>
+                </Form.Item>
+              </>
+            )}
+
+
+            {/* OpenRouter */}
+            {selectedProvider === 'openrouter' && (
+              <>
+                <Alert
+                  message="Opção gratuita recomendada"
+                  description="Use uma chave do OpenRouter com um modelo :free. O modelo padrão é Qwen3.8 27B Free."
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: '16px' }}
+                />
+
+                <Form.Item
+                  label="OpenRouter API Key"
+                  name="openrouter_api_key"
+                  className="form-item"
+                  rules={[
+                    { required: true, message: 'Digite sua chave do OpenRouter' },
+                    { min: 10, message: 'A chave da API parece curta demais' }
+                  ]}
+                >
+                  <Input.Password
+                    placeholder="sk-or-v1-..."
+                    prefix={<KeyOutlined />}
+                    className="settings-input"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  label="Modelo OpenRouter"
+                  name="openrouter_model"
+                  className="form-item"
+                  rules={[{ required: true, message: 'Escolha ou informe um modelo' }]}
+                >
+                  <Select
+                    placeholder="Escolha um modelo"
+                    className="settings-input"
+                    showSearch
+                    allowClear={false}
+                  >
+                    <Select.Option value="qwen/qwen3.8-27b:free">Qwen3.8 27B — grátis</Select.Option>
+                    <Select.Option value="openrouter/free">OpenRouter Free Router — grátis, modelo variável</Select.Option>
                   </Select>
                 </Form.Item>
               </>
@@ -462,8 +516,9 @@ const SettingsPage: React.FC = () => {
                 <InfoCircleOutlined /> 1. 获取API密钥
               </Title>
               <Paragraph className="instruction-text">
-                <strong>通义千问：</strong>访问阿里云控制台 → 人工智能 → 通义千问 → API密钥管理，创建新的API密钥<br />
-                <strong>硅基流动：</strong>访问 <a href="https://siliconflow.cn" target="_blank" rel="noopener noreferrer">SiliconCloud官网</a> → 登录 → API密钥页面 → 新建API密钥
+                <strong>OpenRouter:</strong> crie uma chave em <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">OpenRouter → Keys</a> e cole no campo acima.<br />
+                <strong>DashScope:</strong> use uma chave da plataforma Alibaba Cloud.<br />
+                <strong>SiliconFlow:</strong> use uma chave do SiliconCloud.
               </Paragraph>
             </div>
             

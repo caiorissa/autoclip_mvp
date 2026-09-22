@@ -2,9 +2,10 @@
 LLM客户端工厂 - 根据配置选择使用通义千问或硅基流动API
 """
 import logging
-from typing import Optional
+from typing import Optional, Union
 from .llm_client import LLMClient
 from .siliconflow_client import SiliconFlowClient
+from .openrouter_client import OpenRouterClient
 from ..config import config_manager
 
 logger = logging.getLogger(__name__)
@@ -13,12 +14,12 @@ class LLMFactory:
     """LLM客户端工厂"""
     
     @staticmethod
-    def create_client(provider: Optional[str] = None, api_key: Optional[str] = None, model: Optional[str] = None) -> LLMClient | SiliconFlowClient:
+    def create_client(provider: Optional[str] = None, api_key: Optional[str] = None, model: Optional[str] = None) -> Union[LLMClient, SiliconFlowClient, OpenRouterClient]:
         """
         创建LLM客户端
         
         Args:
-            provider: API提供商，可选值：dashscope, siliconflow
+            provider: Provedor de API: dashscope, siliconflow ou openrouter
             api_key: API密钥
             model: 模型名称
             
@@ -42,20 +43,31 @@ class LLMFactory:
             return LLMClient(api_key=api_key, model=model)
             
         elif provider == "siliconflow":
-            # 使用硅基流动API
             if api_key is None:
                 api_key = config_manager.settings.siliconflow_api_key
             if model is None:
                 model = config_manager.settings.siliconflow_model
-            
-            logger.info(f"创建硅基流动客户端，模型: {model}")
+
+            logger.info(f"Criando cliente SiliconFlow, modelo: {model}")
             return SiliconFlowClient(api_key=api_key, model=model)
-            
+
+        elif provider == "openrouter":
+            if api_key is None:
+                api_key = config_manager.settings.openrouter_api_key
+            if model is None:
+                model = config_manager.settings.openrouter_model
+
+            logger.info(f"Criando cliente OpenRouter, modelo: {model}")
+            return OpenRouterClient(api_key=api_key, model=model)
+
         else:
-            raise ValueError(f"不支持的API提供商: {provider}，支持的值: dashscope, siliconflow")
+            raise ValueError(
+                f"Provedor de API não suportado: {provider}. "
+                "Use dashscope, siliconflow ou openrouter."
+            )
     
     @staticmethod
-    def get_default_client() -> LLMClient | SiliconFlowClient:
+    def get_default_client() -> Union[LLMClient, SiliconFlowClient, OpenRouterClient]:
         """
         获取默认的LLM客户端
         
