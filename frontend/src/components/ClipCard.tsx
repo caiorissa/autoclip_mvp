@@ -57,12 +57,12 @@ const ClipCard: React.FC<ClipCardProps> = ({
 
   const handleDownloadWithTitle = async () => {
     try {
-      const fileName = `${clip.generated_title || clip.title || '视频片段'}.mp4`
+      const fileName = `${clip.generated_title || clip.title || 'Clipe de vídeo'}.mp4`
       
       // 使用fetch获取视频文件
       const response = await fetch(videoUrl || '')
       if (!response.ok) {
-        throw new Error('下载失败')
+        throw new Error('Falha no download')
       }
       
       const blob = await response.blob()
@@ -84,9 +84,9 @@ const ClipCard: React.FC<ClipCardProps> = ({
       // 同时调用原有的下载方法
       onDownload(clip.id)
     } catch (error) {
-      console.error('下载失败:', error)
+      console.error('Falha no download:', error)
       // 如果fetch失败，回退到原来的方法
-      const fileName = `${clip.generated_title || clip.title || '视频片段'}.mp4`
+      const fileName = `${clip.generated_title || clip.title || 'Clipe de vídeo'}.mp4`
       const link = document.createElement('a')
       link.href = videoUrl || ''
       link.download = fileName
@@ -134,7 +134,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
     if (clip.content && clip.content.length > 0) {
       return (
         <div>
-          <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>内容要点：</div>
+          <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Pontos principais:</div>
           {clip.content.map((point, index) => (
             <div key={index} style={{ marginBottom: '4px' }}>
               • {point}
@@ -143,7 +143,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
         </div>
       )
     }
-    return '暂无内容要点'
+    return 'Nenhum ponto principal disponível'
   }
 
   return (
@@ -300,7 +300,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
                   minHeight: '44px'
                 }}
               >
-                {clip.generated_title || clip.title || '未命名片段'}
+                {clip.generated_title || clip.title || 'Clipe sem título'}
               </Title>
             </div>
             
@@ -318,7 +318,7 @@ const ClipCard: React.FC<ClipCardProps> = ({
                   color: '#b0b0b0'
                 }}
               >
-                {clip.recommend_reason || '暂无推荐理由'}
+                {clip.recommend_reason || 'Nenhum motivo de recomendação disponível'}
               </Text>
             </div>
             
@@ -329,15 +329,15 @@ const ClipCard: React.FC<ClipCardProps> = ({
 
       {/* 视频播放模态框 */}
       <Modal
-        title={clip.generated_title || clip.title || '视频预览'}
+        title={clip.generated_title || clip.title || 'Prévia do vídeo'}
         open={showPlayer}
         onCancel={handleClosePlayer}
         footer={[
           <Button key="download" type="primary" icon={<DownloadOutlined />} onClick={handleDownloadWithTitle}>
-            下载视频
+            Baixar vídeo
           </Button>,
           <Button key="close" onClick={handleClosePlayer}>
-            关闭
+            Fechar
           </Button>
         ]}
         width={800}
