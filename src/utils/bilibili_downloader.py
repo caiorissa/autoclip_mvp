@@ -264,6 +264,11 @@ class BilibiliDownloader:
             logger.info(f"Download concluído: {video_info.title}")
             return result
             
+        except ProcessingError as e:
+            error_msg = self._clean_error_text(getattr(e, "message", None) or str(e))
+            if progress_callback:
+                progress_callback(error_msg, 0)
+            raise
         except Exception as e:
             error_msg = f"Falha no download: {self._clean_error_text(str(e))}"
             if progress_callback:
@@ -582,9 +587,20 @@ class BilibiliDownloader:
                 logger.warning("Falha ao converter VTT para SRT: %s", exc)
                 return candidate
 
-        # ASS pode ser processado posteriormente, mas mantemos o arquivo
-        # encontrado em vez de reportar falsamente que não existe legenda.
-        return candidate
+        if candidate.suffix.lower() == '.ass':
+            try:
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", str(candidate), str(standard_path)],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                if standard_path.exists():
+                    return standard_path
+            except Exception as exc:
+                logger.warning("Falha ao converter ASS para SRT: %s", exc)
+
+        return None
 
     def _convert_vtt_to_srt(self, vtt_path: Path, srt_path: Path):
         """将VTT字幕文件转换为SRT格式"""
