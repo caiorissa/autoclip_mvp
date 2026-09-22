@@ -234,16 +234,17 @@ class BilibiliDownloader:
                 progress_callback("Iniciando download do vídeo e das legendas...", 0)
             
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
+            subtitle_result = await loop.run_in_executor(
                 None,
                 self._download_sync,
                 url,
                 ydl_opts
             )
             
-            # 查找下载的文件
+            # Usa o caminho exato retornado pelo downloader para evitar
+            # perder legendas com nomes/sufixos diferentes.
             video_path = self._find_downloaded_video(safe_title)
-            subtitle_path = self._find_downloaded_subtitle(safe_title)
+            subtitle_path = Path(subtitle_result) if subtitle_result else self._find_downloaded_subtitle(safe_title)
             
             if not subtitle_path:
                 raise ProcessingError(
@@ -263,6 +264,11 @@ class BilibiliDownloader:
             logger.info(f"Download concluído: {video_info.title}")
             return result
             
+        except ProcessingError as e:
+            error_msg = self._clean_error_text(getattr(e, "message", None) or str(e))
+            if progress_callback:
+                progress_callback(error_msg, 0)
+            raise
         except Exception as e:
             error_msg = f"Falha no download: {self._clean_error_text(str(e))}"
             if progress_callback:
@@ -441,11 +447,12 @@ class BilibiliDownloader:
                     progress_callback(f"Tentando legenda: {language}", 95)
 
                 code, output_lines = run_command(label, cmd)
-                if code == 0 and self._find_downloaded_subtitle(safe_title):
+                subtitle_found = self._find_downloaded_subtitle(safe_title) if code == 0 else None
+                if subtitle_found:
                     if progress_callback:
                         progress_callback("Legenda obtida com sucesso", 99)
-                    logger.info("[yt-dlp] Legenda selecionada: %s", language)
-                    return
+                    logger.info("[yt-dlp] Legenda selecionada: %s (%s)", language, subtitle_found)
+                    return str(subtitle_found)
 
                 clean_lines = [self._clean_error_text(line) for line in output_lines[-8:]]
                 subtitle_errors.extend(clean_lines)
@@ -526,48 +533,75 @@ class BilibiliDownloader:
         return None
     
     def _find_downloaded_subtitle(self, title: str) -> Optional[Path]:
-        """查找下载的字幕文件 - 简化版本，专注AI字幕"""
-        logger.info(f"正在查找字幕文件，标题: {title}")
-        
-        # Prioriza legendas em português, depois inglês e chinês.
-        preferred_suffixes = [
-            '.pt-BR.srt', '.pt.srt', '.en.srt', '.en-US.srt',
-            '.zh-Hans.srt', '.zh-CN.srt', '.zh.srt', '.ai-zh.srt'
-        ]
-        for suffix in preferred_suffixes:
-            candidate = self.download_dir / f"{title}{suffix}"
-            if candidate.exists():
-                standard_path = self.download_dir / f"{title}.srt"
-                if candidate != standard_path and not standard_path.exists():
-                    candidate.rename(standard_path)
-                    return standard_path
-                return candidate
+        """Localiza a legenda gerada pelo yt-dlp e normaliza para SRT quando possível."""
+        logger.info("Procurando legenda para: %s", title)
 
-        # Compatibilidade com o formato antigo do Bilibili.
-        ai_subtitle_path = self.download_dir / f"{title}.ai-zh.srt"
-        if ai_subtitle_path.exists():
-            # 重命名为标准格式
-            standard_path = self.download_dir / f"{title}.srt"
-            if not standard_path.exists():
-                ai_subtitle_path.rename(standard_path)
-                logger.info(f"重命名AI字幕文件: {title}.ai-zh.srt -> {title}.srt")
-                return standard_path
-            return ai_subtitle_path
-        
-        # 检查是否已经是标准格式
         standard_path = self.download_dir / f"{title}.srt"
         if standard_path.exists():
-            logger.info(f"找到标准字幕文件: {title}.srt")
             return standard_path
-        
-        # 模糊匹配字幕文件
-        for file_path in self.download_dir.glob(f"{title}*.srt"):
-            logger.info(f"找到字幕文件: {file_path.name}")
-            return file_path
-        
-        logger.warning(f"未找到字幕文件，标题: {title}")
+
+        # O yt-dlp pode salvar idiomas como en-orig, pt-BR, pt-PT etc.
+        # Procura qualquer arquivo de legenda relacionado ao título.
+        supported_extensions = ('.srt', '.vtt', '.ass')
+        candidates = []
+
+        for file_path in self.download_dir.glob(f"{title}*"):
+            if file_path.is_file() and file_path.suffix.lower() in supported_extensions:
+                candidates.append(file_path)
+
+        if not candidates:
+            # Fallback: se o yt-dlp sanitizou o nome de maneira um pouco diferente,
+            # aceita qualquer legenda no diretório da tarefa.
+            for ext in supported_extensions:
+                candidates.extend(
+                    file_path for file_path in self.download_dir.glob(f"*{ext}")
+                    if file_path.is_file()
+                )
+
+        if not candidates:
+            logger.warning(
+                "Nenhuma legenda encontrada. Arquivos atuais: %s",
+                [p.name for p in self.download_dir.iterdir() if p.is_file()]
+            )
+            return None
+
+        # Prioridade: SRT > VTT > ASS.
+        extension_priority = {'.srt': 0, '.vtt': 1, '.ass': 2}
+        candidates.sort(key=lambda p: extension_priority.get(p.suffix.lower(), 99))
+        candidate = candidates[0]
+
+        if candidate.suffix.lower() == '.srt':
+            if candidate != standard_path:
+                try:
+                    candidate.replace(standard_path)
+                    return standard_path
+                except OSError:
+                    return candidate
+            return candidate
+
+        if candidate.suffix.lower() == '.vtt':
+            try:
+                self._convert_vtt_to_srt(candidate, standard_path)
+                return standard_path
+            except Exception as exc:
+                logger.warning("Falha ao converter VTT para SRT: %s", exc)
+                return candidate
+
+        if candidate.suffix.lower() == '.ass':
+            try:
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", str(candidate), str(standard_path)],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                if standard_path.exists():
+                    return standard_path
+            except Exception as exc:
+                logger.warning("Falha ao converter ASS para SRT: %s", exc)
+
         return None
-    
+
     def _convert_vtt_to_srt(self, vtt_path: Path, srt_path: Path):
         """将VTT字幕文件转换为SRT格式"""
         try:

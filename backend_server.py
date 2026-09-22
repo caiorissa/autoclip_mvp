@@ -10,6 +10,7 @@ import uuid
 import shutil
 import asyncio
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Union
@@ -873,6 +874,8 @@ async def process_bilibili_download_task(
         
     except Exception as e:
         detail = getattr(e, "message", None) or str(e)
+        # Remove categorias técnicas de exceção que não devem aparecer na interface.
+        detail = re.sub(r'^(?:\[(?:PROCESSING|VALIDATION|NETWORK|API|FILE_IO|SYSTEM)\]\s*)+', '', detail).strip()
         if detail.lower().startswith("falha no download"):
             error_msg = detail
         else:

@@ -74,6 +74,12 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
     }
   }, [pollingInterval])
 
+  const cleanTaskError = (value?: string) =>
+    (value || '')
+      .replace(/^(?:\[(?:PROCESSING|VALIDATION|NETWORK|API|FILE_IO|SYSTEM)\]\s*)+/g, '')
+      .replace(/^Falha no download:\s*Falha no download:\s*/i, 'Falha no download: ')
+      .trim()
+
   const validateVideoUrl = (rawUrl: string): boolean => {
     try {
       const parsed = new URL(rawUrl.trim())
@@ -180,7 +186,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
           clearInterval(interval)
           setPollingInterval(null)
           setDownloading(false)
-          message.error(`Falha no download: ${task.error_message || task.error || 'Erro desconhecido'}`)
+          message.error(cleanTaskError(task.error_message || task.error) || 'Falha no download: erro desconhecido')
         }
       } catch (error: unknown) {
         console.error('Falha ao consultar o status da tarefa:', error)
@@ -544,7 +550,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
               border: '1px solid rgba(255, 77, 79, 0.3)',
               borderRadius: '8px'
             }}>
-              <Text style={{ color: '#ff4d4f', fontSize: '14px' }}>Erro: {(currentTask.error_message || currentTask.error)}</Text>
+              <Text style={{ color: '#ff4d4f', fontSize: '14px' }}>Erro: {cleanTaskError(currentTask.error_message || currentTask.error)}</Text>
             </div>
           )}
         </Card>
