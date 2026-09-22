@@ -58,7 +58,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
         const statusData = await projectApi.getProcessingStatus(projectId)
         setStatus(statusData)
         
-        // 更新项目状态
+        // Atualiza o status do projeto
         updateProject(projectId, {
           status: statusData.status,
           current_step: statusData.current_step,
@@ -66,7 +66,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
           error_message: statusData.error_message
         })
         
-        // 如果Processamento concluído，通知父组件
+        // Se o processamento estiver concluído, notifica o componente pai
         if (statusData.status === 'completed') {
           onComplete?.(projectId)
         }
@@ -75,10 +75,10 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
       }
     }
 
-    // 立即检查一次状态
+    // Verifica o status imediatamente
     checkStatus()
     
-    // 如果任务还在进行中，定期检查状态
+    // Se a tarefa ainda estiver em andamento, verifica periodicamente
     const interval = setInterval(checkStatus, 2000)
     
     return () => clearInterval(interval)
@@ -93,10 +93,10 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
         // Tentar novamente a partir da etapa atual
         await projectApi.restartStep(projectId, status.current_step)
       } else {
-        // 完全重试
+        // Tenta novamente desde o início
         await projectApi.retryProcessing(projectId)
       }
-      // 重新开始状态检查
+      // Reinicia a verificação de status
       setStatus(null)
     } catch (error) {
       console.error('Retry error:', error)
@@ -205,7 +205,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
               />
             </div>
 
-            {/* 当前etapas信息 */}
+            {/* Informações da etapa atual */}
             <div style={{
               background: '#f8f9fa',
               padding: '16px',
@@ -223,7 +223,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
               />
             </div>
 
-            {/* 错误信息 */}
+            {/* Informações de erro */}
             {status.status === 'error' && status.error_message && (
               <Alert
                 message="Falha no processamento"
@@ -233,7 +233,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
               />
             )}
 
-            {/* etapas列表 */}
+            {/* Lista de etapas */}
             <div>
               <Text strong style={{ marginBottom: '16px', display: 'block' }}>Etapas do processamento</Text>
               <Steps
@@ -254,7 +254,7 @@ const TaskProgressModal: React.FC<TaskProgressModalProps> = ({
               </Steps>
             </div>
 
-            {/* 完成提示 */}
+            {/* Aviso de conclusão */}
             {status.status === 'completed' && (
               <Alert
                 message="Processamento concluído"
