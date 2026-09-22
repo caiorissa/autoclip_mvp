@@ -37,6 +37,7 @@ class BilibiliVideoInfo:
         self.view_count = info_dict.get('view_count', 0) or 0
         self.upload_date = info_dict.get('upload_date', '') or ''
         self.webpage_url = info_dict.get('webpage_url', '') or ''
+        self._raw_info = info_dict
         extractor = str(info_dict.get('extractor_key') or info_dict.get('extractor') or '').lower()
         self.platform = 'youtube' if 'youtube' in extractor else 'bilibili' if 'bilibili' in extractor else extractor
     
@@ -217,9 +218,7 @@ class BilibiliDownloader:
             'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
             'writeautomaticsub': True,
             'writesubtitles': True,
-            'subtitleslangs': ['pt-BR', 'pt', 'en', 'en-US', 'zh-Hans', 'zh-CN', 'zh', 'ai-zh'],
-            'subtitlesformat': 'srt/vtt/best',
-            'convertsubtitles': 'srt',
+            'subtitle_candidates': self._get_subtitle_candidates(video_info),
             'outtmpl': str(self.download_dir / f'{safe_title}.%(ext)s'),
             'noplaylist': True,
             'quiet': True,
@@ -270,11 +269,48 @@ class BilibiliDownloader:
                 progress_callback(error_msg, 0)
             raise ProcessingError(error_msg)
     
+    def _get_subtitle_candidates(self, video_info: BilibiliVideoInfo) -> list:
+        """Escolhe poucas legendas, priorizando faixas originais em vez de traduções automáticas."""
+        raw = getattr(video_info, '_raw_info', {}) or {}
+        manual = raw.get('subtitles') or {}
+        automatic = raw.get('automatic_captions') or {}
+        source_language = (raw.get('language') or '').strip()
+
+        candidates = []
+
+        def add(source: Dict[str, Any], language: str):
+            if language and language in source and language not in candidates:
+                candidates.append(language)
+
+        # Legendas manuais costumam ser mais estáveis.
+        add(manual, source_language)
+        for language in ('pt-BR', 'pt-PT', 'pt', 'en-orig', 'en-US', 'en'):
+            add(manual, language)
+        for language in manual.keys():
+            add(manual, language)
+
+        # Em legendas automáticas, prioriza a faixa original para evitar
+        # requisições extras de tradução que podem receber HTTP 429.
+        original_auto = [lang for lang in automatic.keys() if lang.endswith('-orig')]
+        if source_language:
+            add(automatic, f"{source_language}-orig")
+        for language in original_auto:
+            add(automatic, language)
+        add(automatic, source_language)
+        for language in ('en-orig', 'en-US', 'en', 'pt-BR', 'pt-PT', 'pt'):
+            add(automatic, language)
+        for language in automatic.keys():
+            add(automatic, language)
+
+        # Evita bombardear o endpoint de legendas do YouTube.
+        return candidates[:5]
+
     def _download_sync(self, url: str, ydl_opts: Dict[str, Any]):
-        """Baixa vídeo e legendas via yt-dlp, com fallback específico para YouTube."""
+        """Baixa o vídeo primeiro e a legenda separadamente, com fallbacks para YouTube."""
         browser = self.browser.lower() if self.browser else None
         platform = self.detect_platform(url)
         safe_title = (Path(ydl_opts.get('outtmpl', '')).name.replace('%(ext)s', '').rstrip('.') or 'video')
+        subtitle_candidates = ydl_opts.get('subtitle_candidates') or []
 
         progress_callback = None
         if ydl_opts.get('progress_hooks'):
@@ -285,44 +321,24 @@ class BilibiliDownloader:
                 except Exception:
                     progress_callback = None
 
-        base_cmd = [
+        youtube_args = ["--extractor-args", "youtube:player_client=default,web_embedded"]
+
+        video_base = [
             sys.executable, "-m", "yt_dlp",
             "--no-playlist",
             "--no-colors",
             "--format", "bestvideo+bestaudio/best",
             "--merge-output-format", "mp4",
-            "--write-sub",
-            "--write-auto-sub",
-            "--sub-langs", "pt-BR,pt.*,en.*,.*-orig,zh.*,ai-zh",
-            "--sub-format", "srt/vtt/best",
-            "--convert-subs", "srt",
             "--output", f"{safe_title}.%(ext)s",
-            "--progress"
+            "--progress",
+            "--retries", "3"
         ]
-
-        attempts = []
-
         if platform == "youtube":
-            # Vídeos públicos: tenta primeiro sem cookies. Isso evita o bug
-            # atual do cliente autenticado tv_downgraded do YouTube.
-            attempts.append(("sem cookies", list(base_cmd)))
+            video_base.extend(youtube_args)
 
-            if browser:
-                with_cookies = list(base_cmd)
-                with_cookies.extend([
-                    "--cookies-from-browser", browser,
-                    "--extractor-args", "youtube:player_client=default,web_embedded"
-                ])
-                attempts.append((f"com cookies de {browser}", with_cookies))
-        else:
-            cmd = list(base_cmd)
-            if browser:
-                cmd.extend(["--cookies-from-browser", browser])
-            attempts.append(("padrão", cmd))
-
-        def run_attempt(label: str, cmd: list):
+        def run_command(label: str, cmd: list):
             full_cmd = cmd + [url]
-            logger.info("[yt-dlp] Tentativa %s (%s)", label, platform)
+            logger.info("[yt-dlp] %s", label)
 
             process = subprocess.Popen(
                 full_cmd,
@@ -350,40 +366,109 @@ class BilibiliDownloader:
                         if match:
                             try:
                                 progress = float(match.group(1))
-                                progress_callback(f"Baixando... {progress:.1f}%", progress)
+                                progress_callback(f"Baixando vídeo... {progress:.1f}%", progress * 0.9)
                             except ValueError:
                                 pass
 
-            result = process.poll()
-            return result, output_lines
+            return process.poll(), output_lines
 
-        last_output = []
-        last_code = 1
+        # 1) Baixa o vídeo. Para vídeos públicos do YouTube, tenta sem cookies primeiro.
+        video_attempts = [("Baixando vídeo sem cookies", list(video_base))]
+        if browser:
+            with_cookies = list(video_base)
+            with_cookies.extend(["--cookies-from-browser", browser])
+            video_attempts.append((f"Baixando vídeo com cookies de {browser}", with_cookies))
 
-        for label, cmd in attempts:
-            code, output_lines = run_attempt(label, cmd)
-            last_code = code
-            last_output = output_lines
+        video_errors = []
+        video_ok = False
 
+        for label, cmd in video_attempts:
+            code, output_lines = run_command(label, cmd)
             if code == 0:
-                logger.info("[yt-dlp] Download concluído. Arquivos: %s", os.listdir(self.download_dir))
-                return
+                video_ok = True
+                break
+            video_errors.extend(output_lines[-8:])
 
-            logger.warning("[yt-dlp] Tentativa '%s' falhou com código %s", label, code)
-
-        tail = " ".join(last_output[-8:])
-        tail = self._clean_error_text(tail)
-
-        if "The page needs to be reloaded" in tail:
+        if not video_ok:
+            tail = self._clean_error_text(" ".join(video_errors[-10:]))
+            if "The page needs to be reloaded" in tail:
+                raise ProcessingError(
+                    "O YouTube recusou a extração do vídeo. Atualize o yt-dlp e tente novamente."
+                )
             raise ProcessingError(
-                "O YouTube recusou a extração nesta tentativa. "
-                "Atualize o yt-dlp e tente novamente. "
-                "Se o vídeo exigir login, abra o YouTube no navegador configurado, "
-                "recarregue a página do vídeo e tente novamente."
+                f"Não foi possível baixar o vídeo. {tail or 'O yt-dlp não retornou detalhes.'}"
+            )
+
+        if progress_callback:
+            progress_callback("Vídeo baixado. Obtendo legenda...", 92)
+
+        # 2) Baixa somente uma legenda por tentativa. Prioriza a faixa original.
+        if not subtitle_candidates:
+            raise ProcessingError(
+                "Este vídeo não possui uma legenda manual ou automática disponível para o AutoClip."
+            )
+
+        subtitle_errors = []
+
+        for language in subtitle_candidates:
+            subtitle_base = [
+                sys.executable, "-m", "yt_dlp",
+                "--no-playlist",
+                "--no-colors",
+                "--skip-download",
+                "--write-sub",
+                "--write-auto-sub",
+                "--sub-langs", language,
+                "--sub-format", "srt/vtt/best",
+                "--convert-subs", "srt",
+                "--output", f"{safe_title}.%(ext)s",
+                "--retries", "3",
+                "--sleep-requests", "1"
+            ]
+            if platform == "youtube":
+                subtitle_base.extend(youtube_args)
+
+            subtitle_attempts = [(f"Baixando legenda '{language}'", list(subtitle_base))]
+            if browser:
+                with_cookies = list(subtitle_base)
+                with_cookies.extend(["--cookies-from-browser", browser])
+                subtitle_attempts.append(
+                    (f"Baixando legenda '{language}' com cookies de {browser}", with_cookies)
+                )
+
+            for label, cmd in subtitle_attempts:
+                if progress_callback:
+                    progress_callback(f"Tentando legenda: {language}", 95)
+
+                code, output_lines = run_command(label, cmd)
+                if code == 0 and self._find_downloaded_subtitle(safe_title):
+                    if progress_callback:
+                        progress_callback("Legenda obtida com sucesso", 99)
+                    logger.info("[yt-dlp] Legenda selecionada: %s", language)
+                    return
+
+                clean_lines = [self._clean_error_text(line) for line in output_lines[-8:]]
+                subtitle_errors.extend(clean_lines)
+
+                # Se o YouTube estiver limitando traduções, tenta outra faixa em vez de
+                # abortar todo o projeto.
+                if any("HTTP Error 429" in line or "Too Many Requests" in line for line in clean_lines):
+                    logger.warning(
+                        "[yt-dlp] Legenda '%s' recebeu HTTP 429; tentando o próximo idioma",
+                        language
+                    )
+                    break
+
+        tail = self._clean_error_text(" ".join(subtitle_errors[-10:]))
+        if "HTTP Error 429" in tail or "Too Many Requests" in tail:
+            raise ProcessingError(
+                "O vídeo foi baixado, mas o YouTube limitou temporariamente o download das legendas (HTTP 429). "
+                "Aguarde alguns minutos e tente novamente. O AutoClip tentou também a legenda original como fallback."
             )
 
         raise ProcessingError(
-            f"yt-dlp encerrou com código {last_code}. {tail or 'Nenhum detalhe adicional foi retornado.'}"
+            "O vídeo foi baixado, mas não foi possível obter uma legenda compatível. "
+            + (tail if tail else "")
         )
 
     def _create_progress_hook(self, progress_callback: Callable[[str, float], None]):
