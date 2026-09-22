@@ -487,7 +487,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
           
           <div style={{ marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <Text style={{ color: '#cccccc', fontSize: '14px' }}>Status: {currentTask.status}</Text>
+              <Text style={{ color: '#cccccc', fontSize: '14px' }}>Status: {currentTask.status === 'error' || currentTask.status === 'failed' ? 'erro' : currentTask.status === 'completed' ? 'concluído' : currentTask.status === 'processing' ? 'processando' : currentTask.status === 'downloading' ? 'baixando' : 'aguardando'}</Text>
               <Text style={{ color: '#cccccc', fontSize: '14px' }}>{Math.round(currentTask.progress)}%</Text>
             </div>
             
