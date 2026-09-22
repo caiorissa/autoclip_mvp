@@ -13,6 +13,7 @@ from typing import Dict, Any, Optional, Callable
 from datetime import datetime
 import yt_dlp
 import subprocess
+import sys
 
 try:
     from .error_handler import FileIOError, ValidationError, ProcessingError
@@ -97,39 +98,66 @@ class BilibiliDownloader:
         return 'unknown'
 
     async def get_video_info(self, url: str) -> BilibiliVideoInfo:
-        """
-        获取视频信息（不下载）
-        
-        Args:
-            url: 视频链接
-            
-        Returns:
-            视频信息对象
-        """
+        """Obtém os metadados do vídeo sem fazer o download."""
         if not self.validate_video_url(url):
             raise ValidationError(f"Link de vídeo não suportado: {url}")
-        
-        ydl_opts = {
+
+        platform = self.detect_platform(url)
+        base_opts = {
             'quiet': True,
             'no_warnings': True,
+            'noplaylist': True,
         }
-        
+
+        attempts = [base_opts]
+
+        # No YouTube, cookies de navegador podem acionar um cliente problemático.
+        # Primeiro tenta como visitante; usa cookies apenas como fallback.
         if self.browser:
-            ydl_opts['cookies_from_browser'] = self.browser.lower()
-            logger.info(f'yt-dlp cookies_from_browser: {ydl_opts.get("cookies_from_browser")}')
-        
-        try:
-            loop = asyncio.get_event_loop()
-            info_dict = await loop.run_in_executor(
-                None, 
-                self._extract_info_sync, 
-                url, 
-                ydl_opts
-            )
-            return BilibiliVideoInfo(info_dict)
-        except Exception as e:
-            raise ProcessingError(f"获取视频信息失败: {str(e)}")
-    
+            browser = self.browser.lower()
+            cookie_opts = dict(base_opts)
+            cookie_opts['cookiesfrombrowser'] = (browser,)
+            if platform == 'youtube':
+                cookie_opts['extractor_args'] = {
+                    'youtube': {
+                        'player_client': ['default', 'web_embedded']
+                    }
+                }
+            attempts.append(cookie_opts)
+
+        last_error = None
+        for index, opts in enumerate(attempts):
+            try:
+                loop = asyncio.get_event_loop()
+                info_dict = await loop.run_in_executor(
+                    None,
+                    self._extract_info_sync,
+                    url,
+                    opts
+                )
+                return BilibiliVideoInfo(info_dict)
+            except Exception as exc:
+                last_error = exc
+                logger.warning(
+                    "Falha ao obter metadados (%s/%s): %s",
+                    index + 1,
+                    len(attempts),
+                    self._clean_error_text(str(exc))
+                )
+
+        clean_error = self._clean_error_text(str(last_error)) if last_error else "erro desconhecido"
+        raise ProcessingError(f"Falha ao obter informações do vídeo: {clean_error}")
+
+    @staticmethod
+    def _clean_error_text(text: str) -> str:
+        """Remove sequências ANSI e reduz mensagens de erro do yt-dlp."""
+        if not text:
+            return ""
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\\[[0-?]*[ -/]*[@-~])')
+        cleaned = ansi_escape.sub('', text)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        return cleaned
+
     def _extract_info_sync(self, url: str, ydl_opts: Dict[str, Any]) -> Dict[str, Any]:
         """同步方式提取视频信息"""
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -212,11 +240,11 @@ class BilibiliDownloader:
                 'video_info': video_info.to_dict()
             }
             
-            logger.info(f"下载完成: {video_info.title}")
+            logger.info(f"Download concluído: {video_info.title}")
             return result
             
         except Exception as e:
-            error_msg = f"下载失败: {str(e)}"
+            error_msg = f"Falha no download: {self._clean_error_text(str(e))}"
             if progress_callback:
                 progress_callback(error_msg, 0)
             raise ProcessingError(error_msg)
