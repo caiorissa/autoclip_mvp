@@ -110,7 +110,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
     setDragging(false)
     
     if (!result.destination || !latestCollection) {
-      console.log('拖拽取消或无目标位置')
+      console.log('拖拽Cancelar或无目标位置')
       return
     }
 
@@ -128,7 +128,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
     console.log('新顺序:', newClipIds)
     
     // 显示加载状态
-    const hideLoading = message.loading('正在更新切片顺序...', 0)
+    const hideLoading = message.loading('Atualizando a ordem dos clipes...', 0)
     setIsUpdating(true)
     
     try {
@@ -145,7 +145,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
     } catch (error) {
       console.error('Failed to reorder clips:', error)
       hideLoading()
-      message.error('切片顺序修改失败')
+      message.error('Falha ao alterar a ordem dos clipes')
     } finally {
       setIsUpdating(false)
     }
@@ -154,7 +154,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
   const handleRemoveClip = async (clipId: string) => {
     if (!latestCollection) return
     
-    const hideLoading = message.loading('正在移除切片...', 0)
+    const hideLoading = message.loading('Removendo clipe...', 0)
     setIsUpdating(true)
     
     try {
@@ -172,7 +172,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
     } catch (error) {
       console.error('Failed to remove clip:', error)
       hideLoading()
-      message.error('移除切片失败')
+      message.error('Falha ao remover o clipe')
     } finally {
       setIsUpdating(false)
     }
@@ -193,7 +193,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
   const handleAddClips = async (selectedClipIds: string[]) => {
     if (!latestCollection || !onAddClip) return
     
-    const hideLoading = message.loading('正在添加切片...', 0)
+    const hideLoading = message.loading('Adicionando clipe...', 0)
     setIsUpdating(true)
     
     try {
@@ -203,7 +203,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
     } catch (error) {
       console.error('Failed to add clips:', error)
       hideLoading()
-      message.error('添加切片失败')
+      message.error('Falha ao adicionar o clipe')
     } finally {
       setIsUpdating(false)
     }
@@ -255,22 +255,22 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                 loading={isGenerating}
                 onClick={handleGenerateVideo}
               >
-                导出完整视频
+                Exportar vídeo completo
               </Button>
               {onDelete && (
                 <Popconfirm
-                  title="删除合集"
-                  description="确定要删除这个合集吗？此操作不可撤销。"
+                  title="Excluir合集"
+                  description="Tem certeza de que deseja excluir esta coleção? Esta ação não pode ser desfeita."
                   onConfirm={() => onDelete(latestCollection.id)}
-                  okText="确定"
-                  cancelText="取消"
+                  okText="Confirmar"
+                  cancelText="Cancelar"
                 >
                   <Button 
                     type="text" 
                     icon={<DeleteOutlined />}
                     style={{ color: 'white' }}
                   >
-                    删除
+                    Excluir
                   </Button>
                 </Popconfirm>
               )}
@@ -306,7 +306,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                   ) : (
                     <div className="empty-video">
                       <PlayCircleOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
-                      <Text style={{ color: '#999', marginTop: 16 }}>暂无视频内容</Text>
+                      <Text style={{ color: '#999', marginTop: 16 }}>Nenhum conteúdo de vídeo disponível</Text>
                     </div>
                   )}
                 </div>
@@ -321,7 +321,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                         </div>
                         <div className="video-meta">
                           <Tag color="blue">{formatDuration(currentClip)}</Tag>
-                          <Tag color="green">分数: {(currentClip.final_score * 100).toFixed(0)}</Tag>
+                          <Tag color="green">Pontuação: {(currentClip.final_score * 100).toFixed(0)}</Tag>
                           <Text style={{ color: '#999', marginLeft: 8 }}>
                             {currentClipIndex + 1} / {collectionClips.length}
                           </Text>
@@ -334,7 +334,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                           icon={<LeftOutlined />}
                           disabled={currentClipIndex === 0}
                           onClick={handlePlayPrevious}
-                          title="上一个切片"
+                          title="Clipe anterior"
                           className="control-btn"
                         />
                         <Button 
@@ -342,7 +342,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                           icon={<RightOutlined />}
                           disabled={currentClipIndex === collectionClips.length - 1}
                           onClick={handlePlayNext}
-                          title="下一个切片"
+                          title="Próximo clipe"
                           className="control-btn"
                         />
                       </div>
@@ -357,8 +357,8 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
               <div className="playlist-container">
                 <div className="playlist-header">
                   <div>
-                    <Title level={5} style={{ margin: 0 }}>播放列表</Title>
-                    <Text type="secondary">拖拽调整顺序</Text>
+                    <Title level={5} style={{ margin: 0 }}>Lista de reprodução</Title>
+                    <Text type="secondary">Arraste para ajustar a ordem</Text>
                   </div>
                   {onAddClip && (
                     <Button 
@@ -377,7 +377,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                         fontSize: '14px'
                       }}
                     >
-                      添加切片
+                      Adicionar clipe
                     </Button>
                   )}
                 </div>
@@ -416,7 +416,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
                                   </div>
                                   <div className="clip-meta">
                                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                                      {formatDuration(clip)} • 分数: {(clip.final_score * 100).toFixed(0)}
+                                      {formatDuration(clip)} • Pontuação: {(clip.final_score * 100).toFixed(0)}
                                     </Text>
                                   </div>
                                   {clip.recommend_reason && (
@@ -430,13 +430,13 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
 
                                 <div className="clip-actions">
                                   <Popconfirm
-                                    title="确定要从合集中移除这个切片吗？"
+                                    title="Confirmar要从合集中Remover这个切片吗？"
                                     onConfirm={(e) => {
                                       e?.stopPropagation()
                                       handleRemoveClip(clip.id)
                                     }}
-                                    okText="确定"
-                                    cancelText="取消"
+                                    okText="Confirmar"
+                                    cancelText="Cancelar"
                                     disabled={isUpdating}
                                   >
                                     <Button
@@ -471,7 +471,7 @@ const CollectionPreviewModal: React.FC<CollectionPreviewModalProps> = ({
         </div>
       </div>
       
-      {/* 添加切片模态框 */}
+      {/* Adicionar clipe模态框 */}
       <AddClipToCollectionModal
         visible={showAddClipModal}
         clips={clips}

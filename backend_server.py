@@ -114,6 +114,7 @@ class BilibiliVideoInfoModel(BaseModel):
     view_count: int
     upload_date: str
     webpage_url: str
+    platform: Optional[str] = None
 
 class BilibiliDownloadRequest(BaseModel):
     url: str
@@ -473,12 +474,12 @@ async def detect_available_browsers():
 # B站视频相关API
 @app.post("/api/bilibili/parse")
 async def parse_bilibili_video(url: str = Form(...), browser: Optional[str] = Form(None)):
-    """解析B站视频信息"""
+    """Obtém informações de um vídeo do YouTube ou Bilibili."""
     try:
         # 验证URL格式
         downloader = BilibiliDownloader(browser=browser)
-        if not downloader.validate_bilibili_url(url):
-            raise HTTPException(status_code=400, detail="无效的B站视频链接")
+        if not downloader.validate_video_url(url):
+            raise HTTPException(status_code=400, detail="Link de vídeo não suportado. Use YouTube ou Bilibili.")
         
         # 获取视频信息，传递browser参数
         video_info = await get_bilibili_video_info(url, browser)
@@ -488,20 +489,20 @@ async def parse_bilibili_video(url: str = Form(...), browser: Optional[str] = Fo
             "video_info": video_info.to_dict()
         }
     except Exception as e:
-        logger.error(f"解析B站视频失败: {e}")
-        raise HTTPException(status_code=400, detail=f"解析视频信息失败: {str(e)}")
+        logger.error(f"Falha ao analisar vídeo por link: {e}")
+        raise HTTPException(status_code=400, detail=f"Falha ao obter informações do vídeo: {str(e)}")
 
 @app.post("/api/bilibili/download")
 async def create_bilibili_download_task(
     background_tasks: BackgroundTasks,
     request: BilibiliDownloadRequest
 ):
-    """创建B站视频下载任务"""
+    """Cria uma tarefa de download para YouTube ou Bilibili."""
     try:
         # 验证URL格式
         downloader = BilibiliDownloader()
-        if not downloader.validate_bilibili_url(request.url):
-            raise HTTPException(status_code=400, detail="无效的B站视频链接")
+        if not downloader.validate_video_url(request.url):
+            raise HTTPException(status_code=400, detail="Link de vídeo não suportado. Use YouTube ou Bilibili.")
         
         # 创建下载任务
         task_id = project_manager.create_bilibili_download_task(
@@ -524,11 +525,11 @@ async def create_bilibili_download_task(
         return {
             "success": True,
             "task_id": task_id,
-            "message": "下载任务已创建"
+            "message": "Tarefa de download criada"
         }
     except Exception as e:
-        logger.error(f"创建B站下载任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"创建下载任务失败: {str(e)}")
+        logger.error(f"Falha ao criar tarefa de download: {e}")
+        raise HTTPException(status_code=500, detail=f"Falha ao criar tarefa de download: {str(e)}")
 
 @app.get("/api/bilibili/tasks/{task_id}")
 async def get_bilibili_download_task(task_id: str):
@@ -768,13 +769,13 @@ async def process_bilibili_download_task(
     video_category: str = "default",
     browser: Optional[str] = None
 ):
-    """处理B站视频下载任务"""
+    """Processa uma tarefa de download de vídeo externo."""
     try:
         # 更新任务状态
         project_manager.update_bilibili_task(
             task_id,
             status="downloading",
-            status_message="正在获取视频信息..."
+            status_message="Obtendo informações do vídeo..."
         )
         
         # 获取视频信息
@@ -784,7 +785,7 @@ async def process_bilibili_download_task(
         project_manager.update_bilibili_task(
             task_id,
             video_info=BilibiliVideoInfoModel(**video_info.to_dict()),
-            status_message="开始下载视频和字幕..."
+            status_message="Iniciando download do vídeo e das legendas..."
         )
         
         # 创建临时下载目录
@@ -804,13 +805,13 @@ async def process_bilibili_download_task(
         download_result = await downloader.download_video_and_subtitle(url, progress_callback)
         
         if not download_result['video_path']:
-            raise Exception("视频下载失败")
+            raise Exception("Falha ao baixar o vídeo")
         
         # 更新任务状态
         project_manager.update_bilibili_task(
             task_id,
             status="processing",
-            status_message="正在创建项目...",
+            status_message="Criando projeto...",
             video_path=download_result['video_path'],
             subtitle_path=download_result['subtitle_path'],
             progress=90
@@ -853,16 +854,16 @@ async def process_bilibili_download_task(
         project_manager.update_bilibili_task(
             task_id,
             status="completed",
-            status_message="项目创建完成",
+            status_message="Projeto criado",
             project_id=project_id,
             progress=100
         )
         
-        logger.info(f"B站视频下载任务完成: {task_id}, 项目ID: {project_id}")
+        logger.info(f"Download por link concluído: {task_id}, projeto: {project_id}")
         
     except Exception as e:
         error_msg = f"下载失败: {str(e)}"
-        logger.error(f"B站视频下载任务失败 {task_id}: {error_msg}")
+        logger.error(f"Download por link falhou {task_id}: {error_msg}")
         
         # 更新任务状态为失败
         project_manager.update_bilibili_task(

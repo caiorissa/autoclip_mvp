@@ -78,7 +78,7 @@ const Header: React.FC = () => {
               boxShadow: '0 2px 8px rgba(79, 172, 254, 0.3)'
             }}
           >
-            返回首页
+            Voltar ao início
           </Button>
         )}
         <Button 
@@ -101,7 +101,7 @@ const Header: React.FC = () => {
             e.currentTarget.style.borderColor = 'transparent'
           }}
         >
-          设置
+          Configurações
         </Button>
       </div>
     </AntHeader>

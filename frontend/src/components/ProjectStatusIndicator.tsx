@@ -27,35 +27,35 @@ const ProjectStatusIndicator: React.FC<ProjectStatusIndicatorProps> = ({
         return {
           color: '#1890ff',
           icon: <ClockCircleOutlined />,
-          text: '等待处理',
+          text: 'Aguardando processamento',
           badgeStatus: 'processing' as const
         }
       case 'processing':
         return {
           color: '#52c41a',
           icon: <LoadingOutlined spin />,
-          text: `处理中 (${project.current_step || 0}/${project.total_steps || 6})`,
+          text: `Processando (${project.current_step || 0}/${project.total_steps || 6})`,
           badgeStatus: 'processing' as const
         }
       case 'completed':
         return {
           color: '#52c41a',
           icon: <CheckCircleOutlined />,
-          text: '处理完成',
+          text: 'Processamento concluído',
           badgeStatus: 'success' as const
         }
       case 'error':
         return {
           color: '#ff4d4f',
           icon: <ExclamationCircleOutlined />,
-          text: '处理失败',
+          text: '处理Falha',
           badgeStatus: 'error' as const
         }
       default:
         return {
           color: '#d9d9d9',
           icon: <ClockCircleOutlined />,
-          text: '未知状态',
+          text: 'Status desconhecido',
           badgeStatus: 'default' as const
         }
     }
@@ -69,14 +69,14 @@ const ProjectStatusIndicator: React.FC<ProjectStatusIndicatorProps> = ({
   const getStepName = () => {
     if (project.status === 'processing' && project.current_step) {
       const stepNames = {
-        1: '内容大纲分析',
-        2: '时间轴生成',
-        3: '片段评分',
-        4: '标题生成',
-        5: '主题聚类',
-        6: '视频生成'
+        1: 'Análise da estrutura do conteúdo',
+        2: 'Geração da linha do tempo',
+        3: 'Avaliação dos clipes',
+        4: 'Geração de títulos',
+        5: 'Agrupamento por tema',
+        6: 'Geração de vídeo'
       }
-      return stepNames[project.current_step as keyof typeof stepNames] || '处理中'
+      return stepNames[project.current_step as keyof typeof stepNames] || 'Processando'
     }
     return statusConfig.text
   }

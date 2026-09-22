@@ -24,7 +24,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
   
   const { addProject } = useProjectStore()
 
-  // 加载视频分类配置
+  // 加载Categoria do vídeo配置
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -38,7 +38,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
         }
       } catch (error) {
         console.error('Failed to load video categories:', error)
-        message.error('加载视频分类失败')
+        message.error('Falha ao carregar as categorias de vídeo')
       }
     }
 
@@ -53,7 +53,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       
       if (['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(extension || '')) {
         newFiles.video = file
-        // 自动设置项目名称为视频文件名（去掉扩展名）
+        // 自动设置Nome do projeto为视频文件名（去掉扩展名）
         if (!projectName) {
           setProjectName(file.name.replace(/\.[^/.]+$/, ''))
         }
@@ -76,17 +76,17 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
 
   const handleUpload = async () => {
     if (!files.video) {
-      message.error('请选择视频文件')
+      message.error('Selecione um arquivo de vídeo')
       return
     }
 
     if (!files.srt) {
-      message.error('请同时导入字幕文件(.srt)')
+      message.error('Importe também o arquivo de legendas (.srt)')
       return
     }
 
     if (!projectName.trim()) {
-      message.error('请输入项目名称')
+      message.error('Digite o nome do projeto')
       return
     }
 
@@ -116,7 +116,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       setUploadProgress(100)
       
       addProject(newProject)
-      message.success('文件上传成功，开始处理...')
+      message.success('Arquivos enviados com sucesso. Iniciando processamento...')
       
       // 重置状态
       setFiles({})
@@ -132,7 +132,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       }
       
     } catch (error) {
-      message.error('上传失败，请重试')
+      message.error('Falha no envio. Tente novamente.')
       console.error('Upload error:', error)
     } finally {
       setUploading(false)
@@ -212,24 +212,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
             marginBottom: '8px',
             fontWeight: 600
           }}>
-            {isDragActive ? '松开鼠标导入文件' : '点击或拖拽文件到此区域'}
+            {isDragActive ? 'Solte para importar os arquivos' : 'Clique ou arraste os arquivos para esta área'}
           </Text>
           <Text style={{ color: '#cccccc', fontSize: '14px', lineHeight: '1.5' }}>
-            支持 MP4、AVI、MOV、MKV、WebM 格式，<Text style={{ color: '#ff9500', fontWeight: 600 }}>必须同时导入字幕文件(.srt)</Text>
+            Compatível com MP4, AVI, MOV, MKV e WebM. <Text style={{ color: '#ff9500', fontWeight: 600 }}>Também é obrigatório importar o arquivo de legendas (.srt)</Text>
           </Text>
         </div>
       </div>
 
-      {/* 项目名称输入 - 只有在选择文件后才显示 */}
+      {/* Nome do projeto输入 - 只有在选择文件后才显示 */}
       {files.video && (
         <div style={{ marginBottom: '16px' }}>
           <Text strong style={{ color: '#ffffff', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-            项目名称
+            Nome do projeto
           </Text>
           <Input
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
-            placeholder="请输入项目名称，用于标识您的视频项目"
+            placeholder="Digite o nome do projeto，用于标识您的视频项目"
             style={{ 
               height: '40px',
               borderRadius: '12px',
@@ -242,11 +242,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
         </div>
       )}
 
-      {/* 视频分类选择 - 只有在选择文件后才显示 */}
+      {/* Categoria do vídeo选择 - 只有在选择文件后才显示 */}
       {files.video && (
         <div style={{ marginBottom: '16px' }}>
           <Text strong style={{ color: '#ffffff', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-            视频分类
+            Categoria do vídeo
           </Text>
           <div style={{
             display: 'flex',
@@ -307,7 +307,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       {Object.keys(files).length > 0 && (
         <div style={{ marginBottom: '16px' }}>
           <Text strong style={{ color: '#ffffff', fontSize: '14px', marginBottom: '12px', display: 'block' }}>
-            已选择文件
+            Arquivos selecionados
           </Text>
           <Space direction="vertical" style={{ width: '100%' }} size="small">
             {files.video && (
@@ -354,7 +354,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
                     fontSize: '12px'
                   }}
                 >
-                  移除
+                  Remover
                 </Button>
               </div>
             )}
@@ -387,7 +387,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
                       {files.srt.name}
                     </Text>
                     <Text style={{ color: '#cccccc', fontSize: '13px' }}>
-                      字幕文件
+                      Arquivo de legendas
                     </Text>
                   </div>
                 </Space>
@@ -402,13 +402,13 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
                     fontSize: '12px'
                   }}
                 >
-                  移除
+                  Remover
                 </Button>
               </div>
             )}
           </Space>
           
-          {/* 缺少字幕文件提示 */}
+          {/* 缺少Arquivo de legendas提示 */}
           {files.video && !files.srt && (
             <div style={{
               marginTop: '12px',
@@ -422,14 +422,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
             }}>
               <SubnodeOutlined style={{ color: '#ff9500', fontSize: '16px' }} />
               <Text style={{ color: '#ff9500', fontSize: '14px', fontWeight: 500 }}>
-                请添加字幕文件(.srt)以完成导入
+                请添加Arquivo de legendas(.srt)以完成导入
               </Text>
             </div>
           )}
         </div>
       )}
 
-      {/* 导入进度 */}
+      {/* Progresso da importação */}
       {uploading && (
         <div style={{ 
           marginBottom: '16px',
@@ -440,7 +440,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
           backdropFilter: 'blur(10px)'
         }}>
           <div style={{ marginBottom: '12px' }}>
-            <Text style={{ color: '#ffffff', fontWeight: 600, fontSize: '14px' }}>导入进度</Text>
+            <Text style={{ color: '#ffffff', fontWeight: 600, fontSize: '14px' }}>Progresso da importação</Text>
             <Text style={{ color: '#4facfe', float: 'right', fontWeight: 600, fontSize: '14px' }}>
               {uploadProgress}%
             </Text>
@@ -458,7 +458,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
             style={{ marginBottom: '8px' }}
           />
           <Text style={{ color: '#cccccc', fontSize: '13px', marginTop: '8px', display: 'block', textAlign: 'center' }}>
-            正在导入文件，请稍候...
+            Importando arquivos. Aguarde...
           </Text>
         </div>
       )}
@@ -484,7 +484,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
               transition: 'all 0.3s ease'
             }}
           >
-            {uploading ? '导入中...' : '开始导入并处理'}
+            {uploading ? 'Importando...' : 'Importar e processar'}
           </Button>
         </div>
       )}

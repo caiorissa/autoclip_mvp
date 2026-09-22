@@ -89,11 +89,11 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
             zIndex: 10
           }}>
             <Popconfirm
-              title="确认删除合集"
-              description={`确定要删除合集「${collection.collection_title}」吗？此操作不可恢复。`}
+              title="Confirmar exclusão da coleção"
+              description={`Tem certeza de que deseja excluir a coleção "${collection.collection_title}"? Esta ação não pode ser desfeita.`}
               onConfirm={() => onDelete(collection.id)}
-              okText="确认删除"
-              cancelText="取消"
+              okText="Excluir"
+              cancelText="Cancelar"
               okType="danger"
             >
               <Button
@@ -147,7 +147,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                   fontSize: '12px'
                 }}
               >
-                {collectionClips.length} 个片段
+                {collectionClips.length} 个Clipes
               </div>
               <div 
                 style={{
@@ -161,7 +161,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                 }}
               >
                 <Text style={{ color: 'white', fontSize: '12px' }}>
-                  总时长: {formatDuration(totalDuration)}
+                  总Duração: {formatDuration(totalDuration)}
                 </Text>
                 <div 
                   style={{
@@ -179,28 +179,28 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
             </div>
           }
           actions={[
-            <Tooltip key="edit" title="编辑">
+            <Tooltip key="edit" title="Editar">
               <Button 
                 type="text" 
                 icon={<EditOutlined />}
                 onClick={() => setEditing(true)}
               />
             </Tooltip>,
-            <Tooltip key="clips" title="查看片段">
+            <Tooltip key="clips" title="Ver clipes">
               <Button 
                 type="text"
                 onClick={() => setShowClipList(true)}
               >
-                片段
+                Clipes
               </Button>
             </Tooltip>,
             onGenerateVideo && (
-              <Tooltip key="generate" title="导出完整视频">
+              <Tooltip key="generate" title="Exportar vídeo completo">
                 <Button 
                   type="text"
                   onClick={() => onGenerateVideo(collection.id)}
                 >
-                  导出完整视频
+                  Exportar vídeo completo
                 </Button>
               </Tooltip>
             )
@@ -212,22 +212,22 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
               <Input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="输入合集标题"
+                placeholder="Digite o título da coleção"
                 maxLength={50}
               />
               <TextArea
                 value={editSummary}
                 onChange={(e) => setEditSummary(e.target.value)}
-                placeholder="输入合集简介"
+                placeholder="Digite a descrição da coleção"
                 rows={3}
                 maxLength={200}
               />
               <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
                 <Button size="small" icon={<CloseOutlined />} onClick={handleCancel}>
-                  取消
+                  Cancelar
                 </Button>
                 <Button size="small" type="primary" icon={<SaveOutlined />} onClick={handleSave}>
-                  保存
+                  Salvar
                 </Button>
               </Space>
             </Space>
@@ -253,7 +253,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                       boxShadow: '0 2px 4px rgba(24, 144, 255, 0.2)'
                     }}
                   >
-                    手动创建
+                    Criada manualmente
                   </span>
                 ) : (
                   <span
@@ -270,7 +270,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                       boxShadow: '0 2px 4px rgba(114, 46, 209, 0.2)'
                     }}
                   >
-                    AI推荐
+                    Recomendada pela IA
                   </span>
                 )}
               </div>
@@ -292,7 +292,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
               
               <div style={{ marginTop: '8px' }}>
                 <Text type="secondary" style={{ fontSize: '11px' }}>
-                  包含片段：{collectionClips.slice(0, 2).map((clip, idx) => (
+                  Clipes incluídos: {collectionClips.slice(0, 2).map((clip, idx) => (
                     <span key={clip.id || idx}>{clip.title || clip.outline}</span>
                   )).reduce((prev, curr) => [prev, '、', curr], [] as React.ReactNode[])}
                   {collectionClips.length > 2 && `等${collectionClips.length}个`}
@@ -304,14 +304,14 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
         </Card>
       </div>
 
-      {/* 片段列表模态框 */}
+      {/* Lista de clipes模态框 */}
       <Modal
-        title={`${collection.collection_title} - 片段列表`}
+        title={`${collection.collection_title} - Lista de clipes`}
         open={showClipList}
         onCancel={() => setShowClipList(false)}
         footer={[
           <Button key="close" onClick={() => setShowClipList(false)}>
-            关闭
+            Fechar
           </Button>,
           ...(onGenerateVideo ? [
             <Button 
@@ -322,7 +322,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                 setShowClipList(false)
               }}
             >
-              导出完整视频
+              Exportar vídeo completo
             </Button>
           ] : [])
         ]}
@@ -330,7 +330,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
       >
         <div style={{ marginBottom: '16px' }}>
           <Text type="secondary">
-            拖拽调整片段顺序，生成视频时将按此顺序拼接
+            Arraste os clipes para ajustar a ordem. O vídeo será montado seguindo essa sequência.
           </Text>
         </div>
         
