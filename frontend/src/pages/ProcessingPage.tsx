@@ -205,7 +205,7 @@ const ProcessingPage: React.FC = () => {
         {status?.status === 'completed' && (
           <Alert
             message="Processamento concluído"
-            description="视频已成功Processamento concluído，正在跳转到项目详情页..."
+            description="O vídeo foi processado com sucesso. Abrindo os detalhes do projeto..."
             type="success"
             showIcon
           />
