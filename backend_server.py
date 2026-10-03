@@ -1520,322 +1520,72 @@ async def get_processing_status(project_id: str):
 
 @app.get("/api/projects/{project_id}/logs")
 async def get_project_logs(project_id: str, lines: int = 50):
-    """获取项目处理日志"""
+    """Retorna somente os logs pertencentes ao processamento do projeto."""
     try:
         project = project_manager.get_project(project_id)
         if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
-        
-        log_file = "auto_clips.log"
-        if not os.path.exists(log_file):
+            raise HTTPException(status_code=404, detail="Projeto não encontrado")
+
+        log_file = Path("auto_clips.log")
+        if not log_file.exists():
             return {"logs": []}
-        
-        # 读取日志文件的最后N行
-        with open(log_file, 'r', encoding='utf-8') as f:
-            all_lines = f.readlines()
-        
-        # 获取最后N行
-        recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
-        
-        # 解析日志行
-        logs = []
-        for line in recent_lines:
-            line = line.strip()
-            if line:
-                # 解析日志格式: 时间戳 - 模块 - 级别 - 消息
-                parts = line.split(' - ', 3)
-                if len(parts) >= 4:
-                    timestamp = parts[0]
-                    module = parts[1]
-                    level = parts[2]
-                    message = parts[3]
-                    logs.append({
-                        "timestamp": timestamp,
-                        "module": module,
-                        "level": level,
-                        "message": message
-                    })
-                else:
-                    # 如果格式不匹配，直接作为消息
-                    logs.append({
-                        "timestamp": "",
-                        "module": "",
-                        "level": "INFO",
-                        "message": line
-                    })
-        
-        return {"logs": logs}
-    except Exception as e:
-        logger.error(f"get_project_logs failed for {project_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/projects/{project_id}/download")
-async def download_project_video(project_id: str, clip_id: str = None, collection_id: str = None):
-    """下载项目视频文件"""
-    project = project_manager.get_project(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="项目不存在")
-    
-    if clip_id:
-        # 下载切片视频
-        clip_files = list(CLIPS_DIR.glob(f"{clip_id}_*.mp4"))
-        if not clip_files:
-            raise HTTPException(status_code=404, detail="切片视频不存在")
-        file_path = clip_files[0]
-        filename = f"clip_{clip_id}.mp4"
-    elif collection_id:
-        # 下载合集视频 - 查找以合集标题命名的文件
-        project = project_manager.get_project(project_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
-        
-        # 查找指定的合集
-        collection = None
-        for coll in project.collections:
-            if coll.id == collection_id:
-                collection = coll
+        with open(log_file, "r", encoding="utf-8") as fh:
+            all_lines = fh.readlines()
+
+        # O pipeline grava uma linha contendo o project_id quando começa.
+        # Usa a ocorrência mais recente como início da sessão desse projeto.
+        start_index = None
+        for index in range(len(all_lines) - 1, -1, -1):
+            if project_id in all_lines[index]:
+                start_index = index
                 break
-        
-        if not collection:
-            raise HTTPException(status_code=404, detail="合集不存在")
-        
-        # 使用项目特定的合集目录路径
-        collection_clips_dir = Path(f"./uploads/{project_id}/output/collections")
-        
-        # 首先尝试使用合集标题查找文件
-        from src.utils.video_processor import VideoProcessor
-        safe_title = VideoProcessor.sanitize_filename(collection.collection_title)
-        file_path = collection_clips_dir / f"{safe_title}.mp4"
-        
-        # 如果找不到，尝试使用collection_id
-        if not file_path.exists():
-            file_path = collection_clips_dir / f"{collection_id}.mp4"
-        
-        # 如果还是找不到，尝试查找任何以合集标题开头的文件
-        if not file_path.exists():
-            matching_files = list(collection_clips_dir.glob(f"*{collection.collection_title}*.mp4"))
-            if matching_files:
-                file_path = matching_files[0]
-        
-        # 如果还是找不到，尝试查找任何mp4文件
-        if not file_path.exists():
-            mp4_files = list(collection_clips_dir.glob("*.mp4"))
-            if mp4_files:
-                file_path = mp4_files[0]
-        
-        if not file_path.exists():
-            raise HTTPException(status_code=404, detail="合集视频文件不存在")
-        
-        # 使用实际存在的文件名作为下载文件名
-        filename = file_path.name
-    else:
-        # 下载原始视频
-        file_path = Path(project.video_path)
-        filename = f"project_{project_id}.mp4"
-    
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="文件不存在")
-    
-    # 关键：支持中文文件名下载
-    filename_header = f"attachment; filename*=UTF-8''{quote(filename)}"
-    
-    return FileResponse(
-        path=file_path,
-        filename=filename,
-        media_type='application/octet-stream',
-        headers={
-            'Content-Disposition': filename_header
-        }
-    )
 
-@app.get("/api/projects/{project_id}/download-all")
-async def download_project_all(project_id: str):
-    """打包下载项目的所有视频文件"""
-    import zipfile
-    import tempfile
-    import shutil
-    from pathlib import Path
-    import os
+        if start_index is None:
+            return {"logs": []}
 
-    logger.info(f"开始处理打包下载请求: {project_id}")
-    
-    project = project_manager.get_project(project_id)
-    if not project:
-        logger.error(f"项目不存在: {project_id}")
-        raise HTTPException(status_code=404, detail="项目不存在")
-    
-    if project.status != 'completed':
-        logger.error(f"项目状态不是completed: {project.status}")
-        raise HTTPException(status_code=400, detail="项目尚未完成处理，无法下载")
-    
-    logger.info(f"项目信息: {project.name}, 状态: {project.status}")
-    
-    try:
-        # 创建临时目录
-        logger.info("创建临时目录")
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            zip_path = temp_path / f"{project.name}_完整项目.zip"
-            
-            logger.info(f"临时目录: {temp_dir}")
-            logger.info(f"ZIP文件路径: {zip_path}")
-            
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                project_dir = Path(f"./uploads/{project_id}")
-                logger.info(f"项目目录: {project_dir}")
-                logger.info(f"项目目录是否存在: {project_dir.exists()}")
-                
-                # 添加原始视频
-                video_path = Path(project.video_path)
-                logger.info(f"原始视频路径: {video_path}")
-                logger.info(f"原始视频是否存在: {video_path.exists()}")
-                if video_path.exists():
-                    logger.info(f"添加原始视频: {video_path}")
-                    zipf.write(video_path, f"原始视频/{video_path.name}")
-                else:
-                    logger.warning(f"原始视频不存在: {video_path}")
-                
-                # 添加切片视频
-                clips_dir = project_dir / "output" / "clips"
-                logger.info(f"切片目录: {clips_dir}")
-                logger.info(f"切片目录是否存在: {clips_dir.exists()}")
-                if clips_dir.exists():
-                    clip_files = list(clips_dir.glob("*.mp4"))
-                    logger.info(f"找到 {len(clip_files)} 个切片文件")
-                    for clip_file in clip_files:
-                        logger.info(f"处理切片文件: {clip_file}")
-                        # 获取对应的切片信息
-                        clip_id = clip_file.stem.split('_')[0]
-                        clip_info = next((clip for clip in project.clips if clip.id == clip_id), None)
-                        if clip_info:
-                            # 使用切片标题作为文件名
-                            title = clip_info.title or clip_info.generated_title or f"切片_{clip_id}"
-                            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-                            safe_title = safe_title[:50]  # 限制长度
-                            zipf.write(clip_file, f"视频切片/{safe_title}.mp4")
-                            logger.info(f"添加切片: {safe_title}")
-                        else:
-                            zipf.write(clip_file, f"视频切片/{clip_file.name}")
-                            logger.info(f"添加切片: {clip_file.name}")
-                else:
-                    logger.warning(f"切片目录不存在: {clips_dir}")
-                
-                # 添加合集视频
-                collections_dir = project_dir / "output" / "collections"
-                logger.info(f"合集目录: {collections_dir}")
-                logger.info(f"合集目录是否存在: {collections_dir.exists()}")
-                if collections_dir.exists():
-                    collection_files = list(collections_dir.glob("*.mp4"))
-                    logger.info(f"找到 {len(collection_files)} 个合集文件")
-                    for collection_file in collection_files:
-                        logger.info(f"处理合集文件: {collection_file}")
-                        # 获取对应的合集信息
-                        collection_title = collection_file.stem
-                        collection_info = next((coll for coll in project.collections if coll.collection_title == collection_title), None)
-                        if collection_info:
-                            safe_title = "".join(c for c in collection_info.collection_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-                            safe_title = safe_title[:50]  # 限制长度
-                            zipf.write(collection_file, f"合集视频/{safe_title}.mp4")
-                            logger.info(f"添加合集: {safe_title}")
-                        else:
-                            zipf.write(collection_file, f"合集视频/{collection_file.name}")
-                            logger.info(f"添加合集: {collection_file.name}")
-                else:
-                    logger.warning(f"合集目录不存在: {collections_dir}")
-                
-                # 添加项目信息文件
-                project_info = {
-                    "项目名称": project.name,
-                    "创建时间": project.created_at,
-                    "更新时间": project.updated_at,
-                    "视频分类": project.video_category,
-                    "切片数量": len(project.clips),
-                    "合集数量": len(project.collections),
-                    "切片列表": [
-                        {
-                            "ID": clip.id,
-                            "标题": clip.title or clip.generated_title,
-                            "开始时间": clip.start_time,
-                            "结束时间": clip.end_time,
-                            "评分": clip.final_score,
-                            "推荐理由": clip.recommend_reason
-                        } for clip in project.clips
-                    ],
-                    "合集列表": [
-                        {
-                            "ID": coll.id,
-                            "标题": coll.collection_title,
-                            "简介": coll.collection_summary,
-                            "类型": coll.collection_type,
-                            "包含切片": coll.clip_ids
-                        } for coll in project.collections
-                    ]
-                }
-                
-                import json
-                info_file = temp_path / "项目信息.json"
-                with open(info_file, 'w', encoding='utf-8') as f:
-                    json.dump(project_info, f, ensure_ascii=False, indent=2)
-                zipf.write(info_file, "项目信息.json")
-                logger.info("添加项目信息文件")
-            
-            # 复制到持久目录
-            persist_dir = Path("./uploads/tmp")
-            persist_dir.mkdir(parents=True, exist_ok=True)
-            persist_zip_path = persist_dir / zip_path.name
-            shutil.copy(zip_path, persist_zip_path)
+        scoped_lines = all_lines[start_index:]
 
-        # 返回zip文件
-        filename_header = f"attachment; filename*=UTF-8''{quote(persist_zip_path.name)}"
-        logger.info(f"打包完成，文件大小: {persist_zip_path.stat().st_size} bytes")
-        return FileResponse(
-            path=persist_zip_path,
-            filename=persist_zip_path.name,
-            media_type='application/zip',
-            headers={
-                'Content-Disposition': filename_header
-            }
-        )
+        # Se outro projeto começou depois, encerra a sessão do projeto atual.
+        for offset, line in enumerate(scoped_lines[1:], start=1):
+            if (
+                "开始项目" in line
+                or "Iniciando projeto" in line
+                or "自动切片处理流水线" in line
+            ) and project_id not in line:
+                scoped_lines = scoped_lines[:offset]
+                break
+
+        parsed_logs = []
+        for raw_line in scoped_lines[-lines:]:
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            parts = line.split(" - ", 3)
+            if len(parts) >= 4:
+                timestamp, module, level, message = parts
+                parsed_logs.append({
+                    "timestamp": timestamp,
+                    "module": module,
+                    "level": level,
+                    "message": message
+                })
+            else:
+                parsed_logs.append({
+                    "timestamp": "",
+                    "module": "",
+                    "level": "INFO",
+                    "message": line
+                })
+
+        return {"logs": parsed_logs}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"打包下载项目 {project_id} 失败: {e}")
-        import traceback
-        logger.error(f"错误详情: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"打包下载失败: {str(e)}")
+        logger.error("get_project_logs failed for %s: %s", project_id, e)
+        raise HTTPException(status_code=500, detail="Falha ao carregar os logs do projeto")
 
-@app.get("/api/test-zip")
-async def test_zip():
-    """测试zip文件创建"""
-    import zipfile
-    import tempfile
-    
-    try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_path = Path(temp_dir)
-            zip_path = temp_path / "test.zip"
-            
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                # 创建一个测试文件
-                test_file = temp_path / "test.txt"
-                with open(test_file, 'w') as f:
-                    f.write('test content')
-                zipf.write(test_file, "test.txt")
-            
-            return FileResponse(
-                path=zip_path,
-                filename="test.zip",
-                media_type='application/zip'
-            )
-    except Exception as e:
-        logger.error(f"测试zip创建失败: {e}")
-        raise HTTPException(status_code=500, detail=f"测试失败: {str(e)}")
-
-@app.delete("/api/projects/{project_id}")
-async def delete_project(project_id: str):
-    """删除项目"""
-    success = project_manager.delete_project(project_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="项目不存在")
-    return {"message": "项目删除成功"}
 
 @app.get("/api/projects/{project_id}/files/{file_path:path}")
 async def get_project_file(project_id: str, file_path: str):
