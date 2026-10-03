@@ -234,17 +234,16 @@ class BilibiliDownloader:
                 progress_callback("Iniciando download do vídeo e das legendas...", 0)
             
             loop = asyncio.get_event_loop()
-            subtitle_result = await loop.run_in_executor(
+            download_paths = await loop.run_in_executor(
                 None,
                 self._download_sync,
                 url,
                 ydl_opts
             )
             
-            # Usa o caminho exato retornado pelo downloader para evitar
-            # perder legendas com nomes/sufixos diferentes.
-            video_path = self._find_downloaded_video(safe_title)
-            subtitle_path = Path(subtitle_result) if subtitle_result else self._find_downloaded_subtitle(safe_title)
+            # Usa os caminhos exatos encontrados durante o download.
+            video_path = Path(download_paths.get('video_path')) if download_paths.get('video_path') else self._find_downloaded_video(safe_title)
+            subtitle_path = Path(download_paths.get('subtitle_path')) if download_paths.get('subtitle_path') else self._find_downloaded_subtitle(safe_title)
             
             if not subtitle_path:
                 raise ProcessingError(
@@ -405,6 +404,14 @@ class BilibiliDownloader:
                 f"Não foi possível baixar o vídeo. {tail or 'O yt-dlp não retornou detalhes.'}"
             )
 
+        video_path = self._find_downloaded_video(safe_title)
+        if not video_path:
+            files = [p.name for p in self.download_dir.iterdir() if p.is_file()]
+            raise ProcessingError(
+                "O yt-dlp terminou o download, mas o AutoClip não conseguiu localizar o arquivo de vídeo. "
+                f"Arquivos encontrados: {files}"
+            )
+
         if progress_callback:
             progress_callback("Vídeo baixado. Obtendo legenda...", 92)
 
@@ -452,7 +459,10 @@ class BilibiliDownloader:
                     if progress_callback:
                         progress_callback("Legenda obtida com sucesso", 99)
                     logger.info("[yt-dlp] Legenda selecionada: %s (%s)", language, subtitle_found)
-                    return str(subtitle_found)
+                    return {
+                        'video_path': str(video_path),
+                        'subtitle_path': str(subtitle_found)
+                    }
 
                 clean_lines = [self._clean_error_text(line) for line in output_lines[-8:]]
                 subtitle_errors.extend(clean_lines)
@@ -517,21 +527,47 @@ class BilibiliDownloader:
         return filename.strip()
     
     def _find_downloaded_video(self, title: str) -> Optional[Path]:
-        """查找下载的视频文件"""
-        possible_extensions = ['.mp4', '.mkv', '.webm', '.flv']
-        
-        for ext in possible_extensions:
-            video_path = self.download_dir / f"{title}{ext}"
-            if video_path.exists():
-                return video_path
-        
-        # 如果精确匹配失败，尝试模糊匹配
+        """Localiza de forma robusta o arquivo de vídeo produzido pelo yt-dlp."""
+        video_extensions = {
+            '.mp4', '.mkv', '.webm', '.mov', '.m4v', '.ts', '.flv'
+        }
+
+        candidates = []
+
+        # Primeiro tenta arquivos relacionados ao título esperado.
         for file_path in self.download_dir.glob(f"{title}*"):
-            if file_path.suffix.lower() in possible_extensions:
-                return file_path
-        
-        return None
-    
+            if (
+                file_path.is_file()
+                and file_path.suffix.lower() in video_extensions
+                and not file_path.name.endswith('.part')
+            ):
+                candidates.append(file_path)
+
+        # Fallback: como cada tarefa usa uma pasta temporária exclusiva,
+        # podemos procurar qualquer arquivo de vídeo nessa pasta.
+        if not candidates:
+            for file_path in self.download_dir.iterdir():
+                if (
+                    file_path.is_file()
+                    and file_path.suffix.lower() in video_extensions
+                    and not file_path.name.endswith('.part')
+                ):
+                    candidates.append(file_path)
+
+        if not candidates:
+            logger.warning(
+                "Nenhum arquivo de vídeo encontrado. Arquivos atuais: %s",
+                [p.name for p in self.download_dir.iterdir() if p.is_file()]
+            )
+            return None
+
+        # O arquivo final normalmente é o maior. Isso também evita escolher
+        # fragmentos ou arquivos intermediários quando eles existirem.
+        candidates.sort(key=lambda p: p.stat().st_size, reverse=True)
+        selected = candidates[0]
+        logger.info("Arquivo de vídeo localizado: %s", selected)
+        return selected
+
     def _find_downloaded_subtitle(self, title: str) -> Optional[Path]:
         """Localiza a legenda gerada pelo yt-dlp e normaliza para SRT quando possível."""
         logger.info("Procurando legenda para: %s", title)
