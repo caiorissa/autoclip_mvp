@@ -815,8 +815,12 @@ async def process_bilibili_download_task(
         downloader = BilibiliDownloader(temp_download_dir, browser)
         download_result = await downloader.download_video_and_subtitle(url, progress_callback)
         
-        if not download_result['video_path']:
-            raise Exception("Falha ao baixar o vídeo")
+        if not download_result.get('video_path'):
+            files = [p.name for p in temp_download_dir.iterdir() if p.is_file()]
+            raise Exception(
+                "O download terminou, mas o arquivo de vídeo não foi localizado. "
+                f"Arquivos encontrados na pasta temporária: {files}"
+            )
         
         # 更新任务状态
         project_manager.update_bilibili_task(
