@@ -342,17 +342,104 @@ class ProjectManager:
 # 初始化项目管理器
 project_manager = ProjectManager()
 
-# 处理状态存储
+# Estado de processamento em memória.
 processing_status = {}
 
-# 生命周期管理
+def _get_resume_step(project_id: str) -> int:
+    """Descobre a primeira etapa ainda não concluída a partir dos resultados salvos."""
+    metadata_dir = Path("./uploads") / project_id / "output" / "metadata"
+
+    last_completed = 0
+    for step in range(1, 7):
+        if (metadata_dir / f"step{step}_result.json").exists():
+            last_completed = step
+        else:
+            break
+
+    if last_completed >= 6:
+        return 6
+    return max(1, last_completed + 1)
+
+def recover_interrupted_projects() -> int:
+    """Recupera projetos que ficaram marcados como processing após reiniciar o servidor."""
+    recovered = 0
+
+    for project_id, project in list(project_manager.projects.items()):
+        if project.status != "processing":
+            continue
+
+        resume_step = _get_resume_step(project_id)
+
+        # Se a etapa 6 já foi salva, o pipeline terminou e só faltou atualizar
+        # o estado do backend antes do servidor ser encerrado.
+        if resume_step == 6 and (
+            Path("./uploads") / project_id / "output" / "metadata" / "step6_result.json"
+        ).exists():
+            project_manager.update_project(
+                project_id,
+                status="completed",
+                current_step=6,
+                error_message=None
+            )
+            logger.warning(
+                "Projeto %s estava marcado como processing após restart, "
+                "mas a etapa 6 já estava concluída. Status reparado para completed.",
+                project_id
+            )
+            recovered += 1
+            continue
+
+        message = (
+            "O processamento foi interrompido porque o backend foi reiniciado. "
+            f"Você pode retomar a partir da etapa {resume_step}."
+        )
+        project_manager.update_project(
+            project_id,
+            status="error",
+            current_step=resume_step,
+            error_message=message
+        )
+        processing_status[project_id] = {
+            "status": "error",
+            "current_step": resume_step,
+            "total_steps": 6,
+            "step_name": "Processamento interrompido",
+            "progress": ((resume_step - 1) / 6) * 100,
+            "error_message": message
+        }
+
+        try:
+            pipeline_project_manager.update_project_metadata(project_id, {
+                "status": "error",
+                "current_step": max(0, resume_step - 1),
+                "error_message": message
+            })
+        except Exception as exc:
+            logger.warning(
+                "Não foi possível sincronizar o estado interrompido do projeto %s: %s",
+                project_id,
+                exc
+            )
+
+        logger.warning(
+            "Projeto %s interrompido por restart. Próxima etapa: %s",
+            project_id,
+            resume_step
+        )
+        recovered += 1
+
+    return recovered
+
+# Ciclo de vida do servidor
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 启动时
-    print("🚀 FastAPI服务器启动")
+    print("🚀 Servidor FastAPI iniciado")
+    project_manager.prune_missing_projects()
+    recovered = recover_interrupted_projects()
+    if recovered:
+        logger.info("Recuperados %s projeto(s) após reinício do backend", recovered)
     yield
-    # 关闭时
-    print("🛑 FastAPI服务器关闭")
+    print("🛑 Servidor FastAPI encerrado")
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -709,6 +796,13 @@ async def process_project_background(project_id: str, start_step: int = 1):
                 "step_name": step_name,
                 "progress": progress
             })
+            # Persiste a etapa atual para sobreviver a reinícios do backend.
+            project_manager.update_project(
+                project_id,
+                status="processing",
+                current_step=current_step,
+                total_steps=total_steps
+            )
         
         # Sincroniza o projeto do backend com o gerenciador usado pelo pipeline.
         pipeline_project_manager.register_existing_project(
@@ -771,7 +865,7 @@ async def process_project_background(project_id: str, start_step: int = 1):
                 "status": "completed",
                 "current_step": 6,
                 "total_steps": 6,
-                "step_name": "处理完成",
+                "step_name": "Processamento concluído",
                 "progress": 100.0
             })
         else:
@@ -782,7 +876,7 @@ async def process_project_background(project_id: str, start_step: int = 1):
                 "status": "error",
                 "current_step": processing_status[project_id].get("current_step", 0),
                 "total_steps": 6,
-                "step_name": "处理失败",
+                "step_name": "Falha no processamento",
                 "progress": 0,
                 "error_message": error_msg
             }
@@ -1370,11 +1464,34 @@ async def get_processing_status(project_id: str):
     if not project:
         raise HTTPException(status_code=404, detail="项目不存在")
     
-    # 返回处理状态
+    # Se o projeto estiver marcado como processing mas não houver tarefa
+    # ativa em memória, o backend provavelmente foi reiniciado.
+    if project.status == "processing" and project_id not in processing_status:
+        resume_step = _get_resume_step(project_id)
+        message = (
+            "O processamento foi interrompido porque o backend foi reiniciado. "
+            f"Retome a partir da etapa {resume_step}."
+        )
+        project_manager.update_project(
+            project_id,
+            status="error",
+            current_step=resume_step,
+            error_message=message
+        )
+        processing_status[project_id] = {
+            "status": "error",
+            "current_step": resume_step,
+            "total_steps": 6,
+            "step_name": "Processamento interrompido",
+            "progress": ((resume_step - 1) / 6) * 100,
+            "error_message": message
+        }
+        project = project_manager.get_project(project_id)
+
     if project_id in processing_status:
         return processing_status[project_id]
     else:
-        # 如果没有处理状态记录，根据项目状态返回默认状态
+        # Sem estado em memória, usa o estado persistido do projeto.
         if project.status == "completed":
             return {
                 "status": "completed",
@@ -1390,14 +1507,14 @@ async def get_processing_status(project_id: str):
                 "total_steps": 6,
                 "step_name": "处理失败",
                 "progress": 0,
-                "error_message": project.error_message or "处理过程中发生错误"
+                "error_message": project.error_message or "Ocorreu um erro durante o processamento"
             }
         else:
             return {
                 "status": "processing",
                 "current_step": 0,
                 "total_steps": 6,
-                "step_name": "准备处理",
+                "step_name": "Preparando processamento",
                 "progress": 0
             }
 
