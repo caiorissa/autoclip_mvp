@@ -36,7 +36,6 @@ const ProjectDetailPage: React.FC = () => {
   const { 
     currentProject, 
     loading, 
-    error,
     setCurrentProject,
     updateCollection,
     addCollection,
