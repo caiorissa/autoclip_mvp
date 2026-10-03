@@ -47,6 +47,7 @@ const ProjectDetailPage: React.FC = () => {
   } = useProjectStore()
   
   const [statusLoading, setStatusLoading] = useState(false)
+  const [projectLoadError, setProjectLoadError] = useState<string | null>(null)
   const [showCreateCollection, setShowCreateCollection] = useState(false)
   const [sortBy, setSortBy] = useState<'time' | 'score'>('score')
   const [showCollectionDetail, setShowCollectionDetail] = useState(false)
@@ -54,14 +55,14 @@ const ProjectDetailPage: React.FC = () => {
   const { generateAndDownloadCollectionVideo } = useCollectionVideoDownload()
 
   useEffect(() => {
-    if (id) {
-      // Só recarrega quando o store não tem currentProject ou o ID não corresponde ao atual
-      if (!currentProject || currentProject.id !== id) {
-        loadProject()
-      }
-      loadProcessingStatus()
-    }
-  }, [id, currentProject])
+    if (!id) return
+
+    // Nunca mantém dados de outro projeto enquanto a rota atual está carregando.
+    setCurrentProject(null)
+    setProjectLoadError(null)
+    void loadProject()
+    void loadProcessingStatus()
+  }, [id])
 
 
 
@@ -70,9 +71,10 @@ const ProjectDetailPage: React.FC = () => {
     try {
       const project = await projectApi.getProject(id)
       setCurrentProject(project)
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to load project:', error)
-      message.error('Falha ao carregar o projeto')
+      const detail = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setProjectLoadError(detail || 'Projeto não encontrado')
     }
   }
 
@@ -214,20 +216,12 @@ const ProjectDetailPage: React.FC = () => {
     }
   }
 
-  if (loading) {
-    return (
-      <Content style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <Spin size="large" />
-      </Content>
-    )
-  }
-
-  if (error || !currentProject) {
+  if (projectLoadError) {
     return (
       <Content style={{ padding: '24px' }}>
         <Alert
           message="Falha ao carregar"
-          description={error || 'Projeto não encontrado'}
+          description={projectLoadError}
           type="error"
           action={
             <Button size="small" onClick={() => navigate('/')}>
@@ -235,6 +229,14 @@ const ProjectDetailPage: React.FC = () => {
             </Button>
           }
         />
+      </Content>
+    )
+  }
+
+  if (loading || !currentProject || currentProject.id !== id) {
+    return (
+      <Content style={{ padding: '24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Spin size="large" />
       </Content>
     )
   }
