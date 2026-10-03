@@ -52,6 +52,7 @@ class ProjectManager:
             "project_name": project_name,
             "created_at": datetime.now().isoformat(),
             "status": "created",
+            "video_category": "default",
             "current_step": 0,
             "total_steps": 6,
             "error_message": None,
@@ -68,6 +69,61 @@ class ProjectManager:
         logger.info(f"创建项目: {project_id} ({project_name})")
         return project_id
     
+    def register_existing_project(
+        self,
+        project_id: str,
+        project_name: Optional[str] = None,
+        video_category: str = "default"
+    ) -> str:
+        """Registra no pipeline um projeto que já foi criado pelo backend."""
+        project_name = project_name or f"project_{project_id[:8]}"
+
+        self.config.ensure_project_directories(project_id)
+        paths = self.get_project_paths(project_id)
+        input_dir = paths["input_dir"]
+
+        video_file = None
+        for pattern in ("input.mp4", "input.mkv", "input.mov", "input.avi", "input.webm"):
+            candidate = input_dir / pattern
+            if candidate.exists():
+                video_file = candidate
+                break
+
+        srt_file = input_dir / "input.srt"
+        txt_file = input_dir / "input.txt"
+
+        existing_metadata = None
+        metadata_file = paths["metadata_dir"] / "project_metadata.json"
+        if metadata_file.exists():
+            try:
+                with open(metadata_file, "r", encoding="utf-8") as fh:
+                    existing_metadata = json.load(fh)
+            except Exception:
+                existing_metadata = None
+
+        now = datetime.now().isoformat()
+        project_metadata = existing_metadata or {}
+        project_metadata.update({
+            "project_id": project_id,
+            "project_name": project_name,
+            "video_category": video_category,
+            "status": project_metadata.get("status", "created"),
+            "current_step": project_metadata.get("current_step", 0),
+            "total_steps": 6,
+            "error_message": None,
+            "created_at": project_metadata.get("created_at", now),
+            "updated_at": now,
+            "file_info": {
+                "video_file": str(video_file) if video_file else None,
+                "srt_file": str(srt_file) if srt_file.exists() else None,
+                "txt_file": str(txt_file) if txt_file.exists() else None
+            }
+        })
+
+        self._save_project_metadata(project_id, project_metadata)
+        logger.info("Projeto sincronizado com o pipeline: %s (%s)", project_id, project_name)
+        return project_id
+
     def get_project_paths(self, project_id: str) -> Dict[str, Path]:
         """
         获取项目路径配置

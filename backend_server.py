@@ -32,6 +32,7 @@ from src.main import AutoClipsProcessor
 from src.config import OUTPUT_DIR, CLIPS_DIR, COLLECTIONS_DIR, METADATA_DIR, DASHSCOPE_API_KEY, VideoCategory, VIDEO_CATEGORIES_CONFIG, config_manager
 # from src.upload.upload_manager import UploadManager, Platform, UploadStatus  # 已移除bilitool相关功能
 from src.utils.bilibili_downloader import BilibiliDownloader, BilibiliVideoInfo, download_bilibili_video, get_bilibili_video_info
+from src.utils.project_manager import project_manager as pipeline_project_manager
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -279,6 +280,25 @@ class ProjectManager:
         logger.info(f"项目已删除: {project_id}")
         return True
     
+    def prune_missing_projects(self) -> int:
+        """Remove da lista projetos cujo diretório local não existe mais."""
+        stale_ids = [
+            project_id
+            for project_id in list(self.projects.keys())
+            if not (Path("./uploads") / project_id).exists()
+        ]
+
+        for project_id in stale_ids:
+            logger.warning("Removendo projeto órfão da lista: %s", project_id)
+            self.projects.pop(project_id, None)
+            self.processing_status.pop(project_id, None)
+            processing_status.pop(project_id, None)
+
+        if stale_ids:
+            self.save_projects()
+
+        return len(stale_ids)
+
     def create_bilibili_download_task(self, url: str, project_name: Optional[str] = None, 
                                     video_category: str = "default", browser: Optional[str] = None) -> str:
         """创建B站下载任务"""
@@ -561,9 +581,9 @@ async def list_bilibili_download_tasks():
 
 @app.get("/api/projects", response_model=List[Project])
 async def get_projects():
-    """获取所有项目"""
+    """Lista projetos válidos."""
     try:
-        # 使用异步方式获取项目列表，避免阻塞
+        project_manager.prune_missing_projects()
         projects = await asyncio.get_event_loop().run_in_executor(
             None, lambda: list(project_manager.projects.values())
         )
@@ -576,9 +596,13 @@ async def get_projects():
 async def get_project(project_id: str):
     """获取单个项目详情"""
     try:
+        if not (Path("./uploads") / project_id).exists():
+            project_manager.projects.pop(project_id, None)
+            project_manager.save_projects()
+            raise HTTPException(status_code=404, detail="Projeto não encontrado")
         project = project_manager.get_project(project_id)
         if not project:
-            raise HTTPException(status_code=404, detail="项目不存在")
+            raise HTTPException(status_code=404, detail="Projeto não encontrado")
         return project
     except HTTPException:
         raise
@@ -648,6 +672,13 @@ async def upload_files(
     # 创建项目记录（video_path相对于项目根目录）
     relative_video_path = f"uploads/{project_id}/input/input.{video_extension}"
     project = project_manager.create_project(project_name, relative_video_path, project_id, video_category)
+
+    # Registra o mesmo projeto no gerenciador utilizado pelo pipeline de IA.
+    pipeline_project_manager.register_existing_project(
+        project_id=project_id,
+        project_name=project_name,
+        video_category=video_category
+    )
     
     return project
 
@@ -679,7 +710,14 @@ async def process_project_background(project_id: str, start_step: int = 1):
                 "progress": progress
             })
         
-        # 创建处理器并运行
+        # Sincroniza o projeto do backend com o gerenciador usado pelo pipeline.
+        pipeline_project_manager.register_existing_project(
+            project_id=project_id,
+            project_name=project.name,
+            video_category=project.video_category
+        )
+
+        # Cria o processador e executa o pipeline.
         processor = AutoClipsProcessor(project_id)
         
         # 根据起始步骤选择处理方式
@@ -864,8 +902,15 @@ async def process_bilibili_download_task(
             project_id, 
             video_category
         )
+
+        # Registra o mesmo ID no gerenciador utilizado pelo pipeline.
+        pipeline_project_manager.register_existing_project(
+            project_id=project_id,
+            project_name=final_project_name,
+            video_category=video_category
+        )
         
-        # 更新任务状态为完成
+        # Atualiza a tarefa de importação como concluída
         project_manager.update_bilibili_task(
             task_id,
             status="completed",
@@ -920,10 +965,20 @@ async def start_processing(project_id: str, background_tasks: BackgroundTasks):
         
         project_manager.current_processing_count += 1
     
-    # 添加后台任务
+    # Marca imediatamente como processando para a UI não exibir um estado antigo.
+    project_manager.update_project(project_id, status="processing", error_message=None)
+    processing_status[project_id] = {
+        "status": "processing",
+        "current_step": 1,
+        "total_steps": 6,
+        "step_name": "Preparando processamento",
+        "progress": 0.0
+    }
+
+    # Executa o pipeline em segundo plano.
     background_tasks.add_task(process_project_background_with_lock, project_id)
     
-    return {"message": "开始处理项目"}
+    return {"message": "Processamento iniciado"}
 
 @app.post("/api/projects/{project_id}/retry")
 async def retry_project_processing(project_id: str, background_tasks: BackgroundTasks):
