@@ -174,7 +174,7 @@ const BilibiliDownload: React.FC<BilibiliDownloadProps> = ({ onDownloadSuccess }
           clearInterval(interval)
           setPollingInterval(null)
           setDownloading(false)
-          message.success('Download do vídeo concluído e projeto criado com sucesso!')
+          message.success('Importação concluída. Iniciando o processamento com IA...')
           
           if (task.project_id && onDownloadSuccess) {
             onDownloadSuccess(task.project_id)
