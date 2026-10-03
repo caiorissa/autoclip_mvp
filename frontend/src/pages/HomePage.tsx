@@ -190,19 +190,10 @@ const HomePage: React.FC = () => {
               <div>
                 {activeTab === 'bilibili' && (
                   <BilibiliDownload onDownloadSuccess={async (projectId: string) => {
-                    // Atualiza a lista de projetos após concluir
+                    // O projeto já existe quando a tarefa de importação é marcada como concluída.
                     await loadProjects()
-                    
-                    // Aguarda brevemente antes de iniciar para garantir que o status foi atualizado
-                    setTimeout(async () => {
-                      try {
-                        await handleStartProcessing(projectId)
-                      } catch (error) {
-                        // Se o processamento não iniciar, ao menos mantém a lista de projetos atualizada
-                        console.error('Failed to start processing after download:', error)
-                        loadProjects()
-                      }
-                    }, 500)
+                    await handleStartProcessing(projectId)
+                    await refreshNow()
                   }} />
                 )}
                 {activeTab === 'upload' && (
