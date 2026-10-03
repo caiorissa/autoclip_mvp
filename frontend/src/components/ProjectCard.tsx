@@ -34,6 +34,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [currentLogIndex, setCurrentLogIndex] = useState(0)
 
+  const formatProjectDate = (value?: string) => {
+    if (!value) return ''
+    const parsed = dayjs(value)
+    return parsed.isValid() ? parsed.fromNow() : ''
+  }
+
+  const formatLogTime = (value?: string) => {
+    if (!value) return ''
+    const parsed = dayjs(value)
+    return parsed.isValid() ? parsed.format('HH:mm:ss') : ''
+  }
+
   // Obtém informações da categoria
   const getCategoryInfo = (category?: string) => {
     const categoryMap: Record<string, { name: string; icon: string; color: string }> = {
@@ -167,6 +179,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
     
     return () => clearInterval(logInterval)
   }, [project.id, project.status])
+
+  useEffect(() => {
+    setCurrentLogIndex(0)
+  }, [project.id, project.status, logs.length])
 
   // Rotação dos logs
   useEffect(() => {
@@ -340,7 +356,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
             height: '28px'
           }}>
             <Text style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.8)' }}>
-              {dayjs(project.updated_at).fromNow()}
+              {formatProjectDate(project.updated_at) || formatProjectDate(project.created_at)}
             </Text>
             
             {/* Botões de ação */}
@@ -522,10 +538,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onDelete, onRetry, o
                       color: '#999999',
                       lineHeight: '10px'
                     }}>
-                      {logs[currentLogIndex]?.timestamp ? 
-                        dayjs(logs[currentLogIndex].timestamp).format('HH:mm:ss') : 
-                        ''
-                      }
+                      {formatLogTime(logs[currentLogIndex]?.timestamp)}
                     </Text>
                   </div>
                   {logs.length > 1 && (
