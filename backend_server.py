@@ -965,10 +965,20 @@ async def start_processing(project_id: str, background_tasks: BackgroundTasks):
         
         project_manager.current_processing_count += 1
     
-    # 添加后台任务
+    # Marca imediatamente como processando para a UI não exibir um estado antigo.
+    project_manager.update_project(project_id, status="processing", error_message=None)
+    processing_status[project_id] = {
+        "status": "processing",
+        "current_step": 1,
+        "total_steps": 6,
+        "step_name": "Preparando processamento",
+        "progress": 0.0
+    }
+
+    # Executa o pipeline em segundo plano.
     background_tasks.add_task(process_project_background_with_lock, project_id)
     
-    return {"message": "开始处理项目"}
+    return {"message": "Processamento iniciado"}
 
 @app.post("/api/projects/{project_id}/retry")
 async def retry_project_processing(project_id: str, background_tasks: BackgroundTasks):
