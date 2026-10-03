@@ -6,7 +6,7 @@ import logging
 import os
 from typing import Any
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 from .siliconflow_client import SiliconFlowClient
 
@@ -29,6 +29,10 @@ class OpenRouterClient(SiliconFlowClient):
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
+            # O SDK também faz retries por padrão. Desativamos aqui para evitar
+            # retries duplicados e controlar o backoff de 429 em um único lugar.
+            max_retries=0,
+            timeout=120.0,
             default_headers={
                 "HTTP-Referer": "http://localhost:3000",
                 "X-Title": "AutoClip"
@@ -62,18 +66,54 @@ class OpenRouterClient(SiliconFlowClient):
             logger.error("Falha na chamada ao OpenRouter: %s", exc)
             raise
 
-    def call_with_retry(self, prompt: str, input_data: Any = None, max_retries: int = 3) -> str:
-        """Executa chamadas com tentativas adicionais para falhas temporárias."""
+    def call_with_retry(self, prompt: str, input_data: Any = None, max_retries: int = 5) -> str:
+        """Executa retries controlados, com backoff maior para HTTP 429."""
         import time
+
+        # Modelos :free usam capacidade compartilhada e podem sofrer rate limit
+        # temporário no provedor upstream mesmo quando a conta ainda tem cota.
+        rate_limit_delays = [8, 15, 30, 45]
+        generic_delays = [2, 4, 8, 15]
 
         for attempt in range(max_retries):
             try:
                 return self.call(prompt, input_data)
+
             except ValueError:
                 raise
+
+            except RateLimitError as exc:
+                if attempt == max_retries - 1:
+                    raise
+
+                retry_after = None
+                try:
+                    retry_after_value = exc.response.headers.get("retry-after")
+                    if retry_after_value:
+                        retry_after = float(retry_after_value)
+                except Exception:
+                    retry_after = None
+
+                delay = retry_after or rate_limit_delays[min(attempt, len(rate_limit_delays) - 1)]
+                logger.warning(
+                    "OpenRouter respondeu 429. Nova tentativa em %.0f segundos (%s/%s).",
+                    delay,
+                    attempt + 1,
+                    max_retries
+                )
+                time.sleep(delay)
+
             except Exception:
                 if attempt == max_retries - 1:
                     raise
-                time.sleep(2 ** attempt)
+
+                delay = generic_delays[min(attempt, len(generic_delays) - 1)]
+                logger.warning(
+                    "Falha temporária no OpenRouter. Nova tentativa em %s segundos (%s/%s).",
+                    delay,
+                    attempt + 1,
+                    max_retries
+                )
+                time.sleep(delay)
 
         return ""
